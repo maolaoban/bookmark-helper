@@ -1,0 +1,48 @@
+{
+    "manifest_version": 3,
+    "name": "Bookmark Helper",
+    "version": "1.0.0",
+    "description": "智能搜索和推荐你的书签",
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "permissions": [
+        "bookmarks",
+        "activeTab",
+        "storage",
+        "favicon"
+    ],
+    "host_permissions": [
+        "https://generativelanguage.googleapis.com/*",
+        "https://api.openai.com/*",
+        "https://api.anthropic.com/*",
+        "http://localhost:11434/*",
+        "https://aip.baidubce.com/*",
+        "https://open.bigmodel.cn/*",
+        "https://dashscope.aliyuncs.com/*",
+        "https://api.deepseek.com/*"
+    ],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        },
+        "default_title": "Bookmark Helper"
+    },
+    "commands": {
+        "toggle-popup": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+L",
+                "mac": "Command+Shift+L"
+            },
+            "description": "打开书签搜索"
+        }
+    },
+    "background": {
+        "service_worker": "background.js"
+    }
+}

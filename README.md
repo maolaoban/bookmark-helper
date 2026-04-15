@@ -1,173 +1,85 @@
-# Bookmarks Helper
+1.1 项目名称
+Bookmark Helper
 
-## 项目概述
+1.2 项目目标
+开发一个 Chrome 浏览器插件，允许用户使用自然语言描述来搜索自己的书签。插件完全在本地运行，不依赖任何云端 API，保护用户隐私。核心功能包括：
 
-一个功能强大的 Chrome 插件，帮助用户智能搜索和推荐书签。支持普通关键词搜索和 AI 智能推荐。
+自动索引用户所有书签（标题 + URL），生成向量并持久化存储。
 
-## 功能特性
+用户输入任意描述（如“我收藏的那个 Python 异步教程”），返回语义最相关的书签列表。
 
-✅ **关键词搜索** - 快速搜索书签标题和 URL  
-✅ **最近书签** - 显示最近添加的书签  
-✅ **AI 推荐** - 使用多种 AI 模型智能推荐书签  
-✅ **多模型支持** - Google Gemini, OpenAI, Anthropic, Ollama, 百度文心一言, 智谱GLM, 阿里通义千问, DeepSeek  
-✅ **一键打开** - 快捷键 `Ctrl+Shift+B` (Mac: `Cmd+Shift+B`)  
-✅ **主题切换** - 支持浅色、深色和跟随系统主题  
-✅ **弹窗设置** - 点击设置按钮直接配置，无需跳转页面  
-✅ **本地存储** - API Key 仅保存在本地，不会上传  
+支持增量更新（书签增删改时自动更新索引）。
 
-## 项目结构
+提供简洁美观的弹出窗口界面，结果可一键打开。
 
-```
-bookmark-ai/
-├── manifest.json              # 插件配置 (Manifest V3)
-├── background.js              # 后台服务脚本
-├── popup/
-│   ├── popup.html             # 搜索弹窗 + 设置面板
-│   ├── popup.css              # 弹窗样式
-│   └── popup.js               # 搜索逻辑 + 设置逻辑
-├── js/
-│   ├── storage.js             # 本地存储管理
-│   ├── bookmarks.js           # 书签操作
-│   └── api.js                 # AI 服务封装（8种模型）
-├── icons/                     # 图标资源（待添加）
-└── README.md                  # 本文档
-```
+1.3 非功能性目标
+性能：首次索引 1000 个书签耗时 < 30 秒（取决于硬件）；后续搜索响应 < 1 秒。
 
-## 快速开始
+内存：运行时内存占用 < 200MB。
 
-### 加载扩展
+离线可用：首次加载模型后，完全离线工作。
 
-1. 打开 Chrome，进入 `chrome://extensions/`
-2. 开启「开发者模式」
-3. 点击「加载已解压的扩展程序」
-4. 选择 `bookmark-helper` 文件夹
+兼容性：Chrome 最新版 + 其他 Chromium 浏览器（Edge、Brave 等）。
 
-### 配置 API
+二、技术选型
+层次	技术	理由
+插件框架	WXT	现代化，支持 React，热更新，自动生成 manifest，开发体验好
+UI 框架	React 18	声明式组件，生态丰富
+类型系统	TypeScript	提升代码健壮性，便于维护
+向量模型	Xenova/all-MiniLM-L6-v2	轻量（384维），效果好，Transformers.js 原生支持
+向量数据库	Orama	纯 JS，支持向量 + 关键词混合检索，轻量易集成
+持久化存储	IndexedDB (通过 Orama 内置) + chrome.storage.local	Orama 负责向量索引持久化，chrome.storage 存储配置
+构建工具	Vite (WXT 内置)	快速 HMR，生产打包优化
+三、系统架构
+3.1 整体架构图（文字描述）
+text
+[Popup UI (React)] 
+    ↕ chrome.runtime.sendMessage
+[Background Service Worker]
+    ├── Transformers.js Pipeline (嵌入模型)
+    ├── Orama DB (向量索引管理)
+    └── Chrome Bookmarks API 监听器
+          ↕ 读取/监听书签变化
+[IndexedDB] ← 存储向量数据库文件
+[chrome.storage.local] ← 存储配置、上次索引时间等
+3.2 模块划分
+模块1：模型管理模块 (ModelManager)
+负责加载、缓存嵌入模型。
 
-1. 点击插件图标，打开弹窗
-2. 点击右下角"⚙️ 设置"按钮
-3. 选择 AI 提供商并输入 API Key
-4. 保存设置
+对外提供 generateEmbedding(text: string): Promise<number[]> 方法。
 
-### 使用方式
+模块2：书签索引模块 (BookmarkIndexer)
+遍历 chrome.bookmarks.getTree() 获取所有书签（过滤文件夹）。
 
-#### 普通搜索
-- 按 `Ctrl+Shift+B` 打开弹窗
-- 输入关键词搜索书签
-- 点击书签即可打开
+将每个书签的 title + url 送入模型生成向量。
 
-#### AI 推荐
-- 点击"🤖 AI"按钮切换到 AI 模式
-- 输入自然语言描述（如 "学习机器学习的资源"）
-- AI 会推荐最相关的书签
+调用 Orama 的 insert 批量写入。
 
-## 支持的 AI 模型
+索引完成后将数据库快照保存到 IndexedDB。
 
-| 提供商 | 推荐模型 | 获取方式 | 成本 |
-|--------|---------|---------|------|
-| **Google Gemini** | gemini-2.0-flash-exp | https://ai.google.dev | 免费额度充足 |
-| **OpenAI** | gpt-4o-mini | https://platform.openai.com/api-keys | 付费 |
-| **Anthropic** | claude-sonnet-4-20250514 | https://console.anthropic.com | 付费 |
-| **Ollama** | llama3 | https://ollama.ai | 本地免费 |
-| **百度文心一言** | ernie-4.0 | https://console.bce.baidu.com | 免费额度 |
-| **智谱GLM** | glm-4 | https://open.bigmodel.cn | 免费额度 |
-| **阿里通义千问** | qwen-max | https://dashscope.aliyun.com | 免费额度 |
-| **DeepSeek** | deepseek-chat | https://platform.deepseek.com | 免费额度 |
+模块3：搜索模块 (SearchEngine)
+接收用户查询文本，生成查询向量。
 
-## 核心代码模块
+调用 Orama 的向量搜索（支持相似度阈值、返回 top K）。
 
-### storage.js - 配置存储
-- `loadConfig()` - 加载配置
-- `saveConfig()` - 保存配置
-- `getApiKey()` / `saveApiKey()` - 管理 API Key
+返回包含书签完整信息（id, title, url, similarity）的结果集。
 
-### bookmarks.js - 书签操作
-- `searchBookmarks(query)` - 搜索书签
-- `getRecentBookmarks(limit)` - 获取最近书签
-- `getAllBookmarks()` - 获取所有书签
+模块4：同步模块 (SyncManager)
+监听 chrome.bookmarks.onCreated, onRemoved, onChanged, onMoved 事件。
 
-### api.js - AI 服务（8种模型支持）
-- `AIService` 类 - 多模型 AI 服务
-- `callGemini()` - Gemini API
-- `callOpenAI()` - OpenAI API
-- `callAnthropic()` - Anthropic API
-- `callOllama()` - Ollama API
-- `callBaidu()` - 百度文心一言 API
-- `callGlm()` - 智谱GLM API
-- `callQwen()` - 阿里通义千问 API
-- `callDeepSeek()` - DeepSeek API
+增量更新索引（插入、删除、修改对应文档），避免全量重建。
 
-## 开发指南
+若短时间内大量变化（如导入书签），触发节流后的全量重建。
 
-### 添加新的 AI 提供商
+模块5：通信层 (MessageHandler)
+在 background 中监听 runtime.onMessage，处理来自 popup 的 search 请求。
 
-1. 在 `js/api.js` 中添加新的 `call{Provider}()` 方法
-2. 在 `options.js` 中的 `PROVIDER_MODELS` 添加模型列表
-3. 在 `PROVIDER_HELP` 中添加帮助文本
-4. 在 `AIService.chat()` 中添加 case 分支
+也用于 popup 查询索引状态（如是否正在构建）。
 
-### 修改系统提示词
+模块6：UI 层 (React Components)
+SearchInput: 输入框，防抖处理。
 
-编辑 `js/storage.js` 中的 `DEFAULT_CONFIG.systemPrompt`
+ResultList: 展示搜索结果，包含相似度百分比，点击打开书签。
 
-### 调试
+StatusBar: 显示索引状态（如“正在索引 120/1500 书签”）。
 
-1. 打开 `chrome://extensions/`
-2. 在插件旁边点击「检查视图 > Service Worker」查看后台日志
-3. 在弹窗页面右键选择「检查」查看弹窗控制台
-
-## 安全性
-
-⚠️ **重要提示：**
-- API Key 存储在 `chrome.storage.local`，仅在本地使用
-- 切勿在公开场合分享 API Key
-- 定期轮换 API Key 增强安全性
-- 建议使用专用的 API 密钥，设置最小化权限
-
-## 故障排除
-
-### AI 搜索不工作
-- 检查 API Key 是否正确
-- 确认网络连接
-- 查看浏览器控制台是否有错误信息
-- 尝试切换不同的 AI 提供商
-
-### 书签搜索为空
-- 确认 Chrome 中有已保存的书签
-- 尝试使用不同的关键词
-- 检查书签文件夹权限
-
-### 快捷键不响应
-- 访问 `chrome://extensions/shortcuts` 修改快捷键
-- 确认快捷键未被其他程序占用
-
-## 已实现功能 (Phase 1-4)
-
-- ✅ 项目骨架和 Manifest 配置
-- ✅ 搜索弹窗 UI + 设置面板
-- ✅ 普通关键词搜索
-- ✅ 最近书签显示
-- ✅ 设置页面（弹窗内集成）
-- ✅ 多提供商 API 支持（8种模型）
-- ✅ AI 搜索功能
-
-## 待实现功能 (Phase 3-5)
-
-- ⏳ AI 搜索优化
-- ⏳ 搜索历史记录
-- ⏳ 书签分类筛选
-- ⏳ 自定义快捷键
-- ⏳ 右键菜单支持
-
-## 许可证
-
-MIT License
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
----
-
-**最后更新**: 2026-04-14  
-**版本**: v1.0.0

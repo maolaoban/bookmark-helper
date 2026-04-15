@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Bash(npx create-wxt@latest . --template react-ts)",
+      "WebSearch",
+      "WebFetch(domain:wxt.dev)",
+      "Bash(npm info *)",
+      "Bash(npx wxt *)",
+      "Bash(npm install *)",
+      "Bash(npm cache *)",
+      "Bash(npm run *)",
+      "Bash(npm ls *)",
+      "Bash(grep \"entrypointsDir\" node_modules/wxt/dist/*.mjs)"
+    ]
+  }
+}

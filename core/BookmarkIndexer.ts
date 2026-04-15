@@ -27,7 +27,7 @@ class BookmarkIndexer {
   private isIndexing = false;
   private isInitialized = false;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): BookmarkIndexer {
     if (!BookmarkIndexer.instance) {

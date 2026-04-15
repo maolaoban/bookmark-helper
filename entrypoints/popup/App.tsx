@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import SearchInput from './components/SearchInput';
-import ResultList from './components/ResultList';
-import StatusBar from './components/StatusBar';
-import SettingsPanel from './components/SettingsPanel';
-import type { SearchResult, IndexStatus } from '../types';
+import React, { useState, useEffect, useCallback } from "react";
+import SearchInput from "./components/SearchInput";
+import ResultList from "./components/ResultList";
+import StatusBar from "./components/StatusBar";
+import SettingsPanel from "./components/SettingsPanel";
+import type { SearchResult, IndexStatus } from "../../types";
 
 // 默认配置
 const DEFAULT_CONFIG = {
-  theme: 'system' as const,
-  sortBy: 'dateAdded' as const,
+  theme: "system" as const,
+  sortBy: "dateAdded" as const,
 };
 
 const App: React.FC = () => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isIndexing, setIsIndexing] = useState(false);
@@ -25,12 +25,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const stored = await chrome.storage.local.get(['config']);
+        const stored = await chrome.storage.local.get(["config"]);
         if (stored.config) {
           setConfig(stored.config);
         }
       } catch (e) {
-        console.error('加载配置失败:', e);
+        console.error("加载配置失败:", e);
       }
     };
     loadConfig();
@@ -40,29 +40,33 @@ const App: React.FC = () => {
   useEffect(() => {
     const applyTheme = () => {
       const html = document.documentElement;
-      if (config.theme === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        html.classList.toggle('dark', prefersDark);
+      if (config.theme === "system") {
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        html.classList.toggle("dark", prefersDark);
       } else {
-        html.classList.toggle('dark', config.theme === 'dark');
+        html.classList.toggle("dark", config.theme === "dark");
       }
     };
     applyTheme();
 
     // 监听系统主题变化
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', applyTheme);
-    return () => mediaQuery.removeEventListener('change', applyTheme);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaQuery.addEventListener("change", applyTheme);
+    return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [config.theme]);
 
   // 获取索引状态
   const fetchIndexStatus = useCallback(async () => {
     try {
-      const status = await chrome.runtime.sendMessage({ type: 'get-index-status' });
+      const status = await chrome.runtime.sendMessage({
+        type: "get-index-status",
+      });
       setIndexStatus(status);
       setIsIndexing(status.isIndexing);
     } catch (e) {
-      console.error('获取索引状态失败:', e);
+      console.error("获取索引状态失败:", e);
     }
   }, []);
 
@@ -85,7 +89,7 @@ const App: React.FC = () => {
 
     try {
       const searchResults = await chrome.runtime.sendMessage({
-        type: 'search',
+        type: "search",
         query: searchQuery,
         limit: 20,
         threshold: 0.3,
@@ -97,8 +101,8 @@ const App: React.FC = () => {
         setResults([]);
       }
     } catch (e) {
-      console.error('搜索失败:', e);
-      setError(e instanceof Error ? e.message : '搜索失败');
+      console.error("搜索失败:", e);
+      setError(e instanceof Error ? e.message : "搜索失败");
       setResults([]);
     } finally {
       setIsLoading(false);
@@ -111,11 +115,11 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      await chrome.runtime.sendMessage({ type: 'rebuild-index' });
+      await chrome.runtime.sendMessage({ type: "rebuild-index" });
       await fetchIndexStatus();
     } catch (e) {
-      console.error('重建索引失败:', e);
-      setError(e instanceof Error ? e.message : '重建索引失败');
+      console.error("重建索引失败:", e);
+      setError(e instanceof Error ? e.message : "重建索引失败");
     } finally {
       setIsIndexing(false);
     }
@@ -129,18 +133,21 @@ const App: React.FC = () => {
 
   // 切换设置面板
   const toggleSettings = useCallback(() => {
-    setIsSettingsOpen(prev => !prev);
+    setIsSettingsOpen((prev) => !prev);
   }, []);
 
   // 保存设置
-  const handleSaveSettings = useCallback(async (newConfig: typeof DEFAULT_CONFIG) => {
-    try {
-      await chrome.storage.local.set({ config: newConfig });
-      setConfig(newConfig);
-    } catch (e) {
-      console.error('保存设置失败:', e);
-    }
-  }, []);
+  const handleSaveSettings = useCallback(
+    async (newConfig: typeof DEFAULT_CONFIG) => {
+      try {
+        await chrome.storage.local.set({ config: newConfig });
+        setConfig(newConfig);
+      } catch (e) {
+        console.error("保存设置失败:", e);
+      }
+    },
+    [],
+  );
 
   return (
     <div className="app">
@@ -161,14 +168,19 @@ const App: React.FC = () => {
             <span>搜索中...</span>
           </div>
         ) : results.length > 0 ? (
-          <ResultList
-            results={results}
-            onOpen={handleOpenBookmark}
-          />
+          <ResultList results={results} onOpen={handleOpenBookmark} />
         ) : query ? (
           <div className="empty-state">
-            <svg className="empty-icon" viewBox="0 0 1024 1024" width="64" height="64">
-              <path d="M832 981.333333a21.333333 21.333333 0 0 1-11.333333-3.24l-330-206.266666-330 206.266666a21.333333 21.333333 0 0 1-32.666667-18.093333V181.333333a53.393333 53.393333 0 0 1 53.333333-53.333333h618.666667a53.393333 53.393333 0 0 1 53.333333 53.333333v778.666667a21.333333 21.333333 0 0 1-21.333333 21.333333z" fill="#707070"/>
+            <svg
+              className="empty-icon"
+              viewBox="0 0 1024 1024"
+              width="64"
+              height="64"
+            >
+              <path
+                d="M832 981.333333a21.333333 21.333333 0 0 1-11.333333-3.24l-330-206.266666-330 206.266666a21.333333 21.333333 0 0 1-32.666667-18.093333V181.333333a53.393333 53.393333 0 0 1 53.333333-53.333333h618.666667a53.393333 53.393333 0 0 1 53.333333 53.333333v778.666667a21.333333 21.333333 0 0 1-21.333333 21.333333z"
+                fill="#707070"
+              />
             </svg>
             <span>未找到相关书签</span>
           </div>

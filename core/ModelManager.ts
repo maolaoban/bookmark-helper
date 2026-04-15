@@ -3,9 +3,11 @@
  * 负责加载、缓存嵌入模型
  */
 
-import { pipeline, Pipeline } from '@xenova/transformers';
+import { pipeline, Pipeline, env } from '@xenova/transformers';
 
-const MODEL_NAME = 'Xenova/all-MiniLM-L6-v2';
+env.backends.onnx.wasm.numThreads = 1;
+
+const MODEL_NAME = 'Xenova/gte-small';
 
 class ModelManager {
   private static instance: ModelManager;
@@ -13,7 +15,7 @@ class ModelManager {
   private isLoading = false;
   private loadPromise: Promise<void> | null = null;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): ModelManager {
     if (!ModelManager.instance) {
@@ -52,6 +54,9 @@ class ModelManager {
           MODEL_NAME,
           {
             quantized: true,
+            progress_callback: (progress: any) => {
+              console.log(`[ModelManager] 下载进度: ${Math.round(progress.progress * 100)}%`)
+            }
           }
         );
         console.log('[ModelManager] 模型加载完成');

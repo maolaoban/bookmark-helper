@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
-import type { SearchResult } from '../../types';
+import React, { useCallback } from "react";
+import type { SearchResult } from "../../../types";
 
 interface ResultListProps {
   results: SearchResult[];
@@ -8,13 +8,11 @@ interface ResultListProps {
 
 const ResultList: React.FC<ResultListProps> = ({ results, onOpen }) => {
   // 获取 favicon URL
-  const getFaviconUrl = useCallback((url: string) => {
-    try {
-      const urlObj = new URL(url);
-      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
-    } catch {
-      return '';
-    }
+  const getFaviconUrl = useCallback((u: string) => {
+    const url = new URL(chrome.runtime.getURL("/_favicon/"));
+    url.searchParams.set("pageUrl", u);
+    url.searchParams.set("size", "16");
+    return url.toString();
   }, []);
 
   // 格式化相似度为百分比
@@ -24,7 +22,7 @@ const ResultList: React.FC<ResultListProps> = ({ results, onOpen }) => {
 
   // 转义 HTML
   const escapeHtml = useCallback((text: string) => {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }, []);
@@ -44,17 +42,13 @@ const ResultList: React.FC<ResultListProps> = ({ results, onOpen }) => {
               src={getFaviconUrl(result.url)}
               alt=""
               onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-            <div className="bookmark-content">
-              <span className="bookmark-title">{escapeHtml(result.title)}</span>
-              <span className="bookmark-url">{escapeHtml(result.url)}</span>
-              {result.path && (
-                <span className="bookmark-path">{escapeHtml(result.path)}</span>
-              )}
-            </div>
+            <span className="bookmark-title">{escapeHtml(result.title)}</span>
           </div>
+          <div className="bookmark-url">{escapeHtml(result.url)}</div>
+          {result.path && <div className="bookmark-path">{result.path}</div>}
           <div className="bookmark-similarity">
             <div
               className="similarity-bar"

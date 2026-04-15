@@ -1,8 +1,8 @@
-import { defineBackground } from 'wxt/utils/define-background';
-
 export default defineBackground(async () => {
+  console.log('Hello background!', { id: browser.runtime.id });
+
   // 动态导入核心模块
-  const { default: MessageHandler } = await import('../src/core/MessageHandler');
+  const { default: MessageHandler } = await import('../core/MessageHandler');
 
   // 初始化消息处理器
   const messageHandler = MessageHandler.getInstance();

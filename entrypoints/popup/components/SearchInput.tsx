@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from "react";
 
 interface SearchInputProps {
   value: string;
@@ -9,7 +9,7 @@ interface SearchInputProps {
 const SearchInput: React.FC<SearchInputProps> = ({
   value,
   onChange,
-  placeholder = '搜索书签...',
+  placeholder = "搜索书签...",
 }) => {
   const [localValue, setLocalValue] = useState(value);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,7 +35,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         onChange(newValue);
       }, 300);
     },
-    [onChange]
+    [onChange],
   );
 
   // 清理
@@ -68,22 +68,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
         placeholder={placeholder}
         autoFocus
       />
-      {localValue && (
-        <button
-          className="clear-button"
-          onClick={() => {
-            setLocalValue('');
-            onChange('');
-          }}
-        >
-          <svg viewBox="0 0 1024 1024" width="16" height="16">
-            <path
-              d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m205.8 481.4L590.2 673c-8.8 11.4-23.6 18.4-38.2 18.4H472c-14.6 0-29.4-7-38.2-18.4L306 545.4c-8.8-11.4-8.8-28.2 0-39.6l127.6-127.6c8.8-11.4 23.6-18.4 38.2-18.4H600c14.6 0 29.4 7 38.2 18.4l127.6 127.6c8.8 11.4 8.8 28.2 0 39.6z"
-              fill="#707070"
-            />
-          </svg>
-        </button>
-      )}
     </div>
   );
 };

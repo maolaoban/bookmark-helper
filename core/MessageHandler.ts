@@ -42,7 +42,7 @@ class MessageHandler {
   private static instance: MessageHandler;
   private initialized = false;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): MessageHandler {
     if (!MessageHandler.instance) {

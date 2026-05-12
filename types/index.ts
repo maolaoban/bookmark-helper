@@ -68,17 +68,8 @@ export interface IndexStatusMessage {
 export interface AppConfig {
   theme: 'system' | 'light' | 'dark';
   sortBy: 'dateAdded' | 'dateLastUsed';
-  autoIndex: boolean;
-  indexThreshold: number;
-  searchLimit: number;
-  similarityThreshold: number;
+  autoIndex?: boolean;
+  indexThreshold?: number;
+  searchLimit?: number;
+  similarityThreshold?: number;
 }
-
-export const DEFAULT_CONFIG: AppConfig = {
-  theme: 'system',
-  sortBy: 'dateAdded',
-  autoIndex: true,
-  indexThreshold: 0.6,
-  searchLimit: 20,
-  similarityThreshold: 0.3,
-};

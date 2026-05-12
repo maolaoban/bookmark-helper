@@ -3,54 +3,64 @@ import SearchInput from "./components/SearchInput";
 import ResultList from "./components/ResultList";
 import StatusBar from "./components/StatusBar";
 import SettingsPanel from "./components/SettingsPanel";
-import type { SearchResult, IndexStatus } from "../../types";
+import type { SearchResult, IndexStatus, AppConfig } from "../../types";
 
 // 默认配置
-const DEFAULT_CONFIG = {
-  theme: "system" as const,
-  sortBy: "dateAdded" as const,
+const DEFAULT_CONFIG: AppConfig = {
+  theme: "system",
+  sortBy: "dateAdded",
+  autoIndex: true,
+  indexThreshold: 0.6,
+  searchLimit: 20,
+  similarityThreshold: 0.3,
 };
 
 const App: React.FC = () => {
   const [query, setQuery] = useState("");
+
   const [results, setResults] = useState<SearchResult[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
-  const [isIndexing, setIsIndexing] = useState(false);
-  const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null);
+
+  const [indexStatus, setIndexStatus] = useState<any | null>(null);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   const [config, setConfig] = useState(DEFAULT_CONFIG);
+
   const [error, setError] = useState<string | null>(null);
+
+  const getConfigAsync = async () => {
+    try {
+      const stored = await chrome.storage.local.get(["config"]);
+      if (stored.config) {
+        setConfig(stored.config as AppConfig);
+      }
+    } catch (e) {
+      console.error("加载配置失败:", e);
+    }
+  };
+
+  const applyTheme = () => {
+    const html = document.documentElement;
+    if (config.theme === "system") {
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+      html.classList.toggle("dark", prefersDark);
+    } else {
+      html.classList.toggle("dark", config.theme === "dark");
+    }
+  };
 
   // 加载配置
   useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const stored = await chrome.storage.local.get(["config"]);
-        if (stored.config) {
-          setConfig(stored.config);
-        }
-      } catch (e) {
-        console.error("加载配置失败:", e);
-      }
-    };
-    loadConfig();
+    getConfigAsync();
+    applyTheme();
   }, []);
 
   // 应用主题
   useEffect(() => {
-    const applyTheme = () => {
-      const html = document.documentElement;
-      if (config.theme === "system") {
-        const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)",
-        ).matches;
-        html.classList.toggle("dark", prefersDark);
-      } else {
-        html.classList.toggle("dark", config.theme === "dark");
-      }
-    };
-    applyTheme();
-
     // 监听系统主题变化
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     mediaQuery.addEventListener("change", applyTheme);
@@ -64,7 +74,6 @@ const App: React.FC = () => {
         type: "get-index-status",
       });
       setIndexStatus(status);
-      setIsIndexing(status.isIndexing);
     } catch (e) {
       console.error("获取索引状态失败:", e);
     }
@@ -111,7 +120,7 @@ const App: React.FC = () => {
 
   // 处理重建索引
   const handleRebuildIndex = useCallback(async () => {
-    setIsIndexing(true);
+    setIndexStatus({ ...indexStatus, isIndexing: true });
     setError(null);
 
     try {
@@ -121,7 +130,7 @@ const App: React.FC = () => {
       console.error("重建索引失败:", e);
       setError(e instanceof Error ? e.message : "重建索引失败");
     } finally {
-      setIsIndexing(false);
+      setIndexStatus({ ...indexStatus, isIndexing: false });
     }
   }, [fetchIndexStatus]);
 
@@ -137,17 +146,14 @@ const App: React.FC = () => {
   }, []);
 
   // 保存设置
-  const handleSaveSettings = useCallback(
-    async (newConfig: typeof DEFAULT_CONFIG) => {
-      try {
-        await chrome.storage.local.set({ config: newConfig });
-        setConfig(newConfig);
-      } catch (e) {
-        console.error("保存设置失败:", e);
-      }
-    },
-    [],
-  );
+  const handleSaveSettings = async (newConfig: typeof DEFAULT_CONFIG) => {
+    try {
+      await chrome.storage.local.set({ config: newConfig });
+      setConfig(newConfig);
+    } catch (e) {
+      console.error("保存设置失败:", e);
+    }
+  };
 
   return (
     <div className="app">
@@ -193,7 +199,7 @@ const App: React.FC = () => {
 
       <StatusBar
         indexStatus={indexStatus}
-        isIndexing={isIndexing}
+        isIndexing={indexStatus?.isIndexing || false}
         onRebuild={handleRebuildIndex}
         onOpenSettings={toggleSettings}
       />

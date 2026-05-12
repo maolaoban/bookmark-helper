@@ -1,12 +1,12 @@
 import React from "react";
 import type { IndexStatus } from "../../../types";
 
-interface StatusBarProps {
+type StatusBarProps = {
   indexStatus: IndexStatus | null;
   isIndexing: boolean;
   onRebuild: () => void;
   onOpenSettings: () => void;
-}
+};
 
 const StatusBar: React.FC<StatusBarProps> = ({
   indexStatus,

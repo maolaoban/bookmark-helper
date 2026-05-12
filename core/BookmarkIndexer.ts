@@ -4,26 +4,35 @@
  */
 
 import ModelManager from './ModelManager';
-import type { BookmarkData } from '../types';
 
 // 书签文档（包含向量）
-interface BookmarkDoc {
+type BookmarkDocType = {
+  /** 书签ID  */
   id: string;
+  /** 书签标题 */
   title: string;
+  /** 书签URL */
   url: string;
+  /** 书签文本 */
   text: string;
+  /** 向量表示 */
   embedding: number[];
+  /** 添加时间 */
   dateAdded?: number;
+  /** 最后使用时间 */
   dateLastUsed?: number;
+  /** 父级ID */
   parentId?: string;
 }
+
+type BookmarkTreeNodeType = chrome.bookmarks.BookmarkTreeNode;
 
 // 存储键名
 const STORAGE_KEY = 'bookmark_index_data';
 
 class BookmarkIndexer {
   private static instance: BookmarkIndexer;
-  private bookmarks: Map<string, BookmarkDoc> = new Map();
+  private bookmarks: Map<string, BookmarkDocType> = new Map();
   private isIndexing = false;
   private isInitialized = false;
 
@@ -63,12 +72,11 @@ class BookmarkIndexer {
   /**
    * 获取所有书签
    */
-  async getAllBookmarks(): Promise<chrome.bookmarks.BookmarkTreeNode[]> {
+  async getAllBookmarks(): Promise<BookmarkTreeNodeType[]> {
     return new Promise((resolve) => {
       chrome.bookmarks.getTree((tree) => {
-        const bookmarks: chrome.bookmarks.BookmarkTreeNode[] = [];
-
-        const flatten = (nodes: chrome.bookmarks.BookmarkTreeNode[]) => {
+        const bookmarks: BookmarkTreeNodeType[] = [];
+        const flatten = (nodes: BookmarkTreeNodeType[]) => {
           for (const node of nodes) {
             if (node.url && node.url.trim() !== '') {
               bookmarks.push(node);
@@ -122,7 +130,7 @@ class BookmarkIndexer {
             const text = `${node.title} ${node.url}`;
             const embedding = await modelManager.generateEmbedding(text);
 
-            const doc: BookmarkDoc = {
+            const doc: BookmarkDocType = {
               id: node.id,
               title: node.title || '无标题',
               url: node.url,
@@ -147,9 +155,7 @@ class BookmarkIndexer {
       await this.saveToStorage();
 
       // 更新索引时间
-      await new Promise<void>((resolve) => {
-        chrome.storage.local.set({ lastIndexTime: Date.now() }, () => resolve());
-      });
+      await chrome.storage.local.set({ lastIndexTime: Date.now() });
 
       console.log(`[BookmarkIndexer] 索引构建完成，共 ${this.bookmarks.size} 个书签`);
     } catch (error) {
@@ -170,9 +176,7 @@ class BookmarkIndexer {
       embedding: doc.embedding, // 数组可以JSON序列化
     }));
 
-    await new Promise<void>((resolve) => {
-      chrome.storage.local.set({ [STORAGE_KEY]: data }, () => resolve());
-    });
+    await chrome.storage.local.set({ [STORAGE_KEY]: data });
 
     console.log('[BookmarkIndexer] 数据已保存到存储');
   }
@@ -184,7 +188,7 @@ class BookmarkIndexer {
     return new Promise((resolve) => {
       chrome.storage.local.get([STORAGE_KEY], (result) => {
         if (result[STORAGE_KEY] && Array.isArray(result[STORAGE_KEY])) {
-          const data = result[STORAGE_KEY] as BookmarkDoc[];
+          const data = result[STORAGE_KEY] as BookmarkDocType[];
           this.bookmarks.clear();
           for (const doc of data) {
             this.bookmarks.set(doc.id, doc);
@@ -198,7 +202,7 @@ class BookmarkIndexer {
   /**
    * 获取所有文档
    */
-  getAllDocs(): BookmarkDoc[] {
+  getAllDocs(): BookmarkDocType[] {
     return Array.from(this.bookmarks.values());
   }
 
@@ -213,24 +217,23 @@ class BookmarkIndexer {
    * 获取索引状态
    */
   async getIndexStatus(): Promise<{
+    /** 是否正在索引 */
     isIndexing: boolean;
+    /** 书签总数 */
     totalBookmarks: number;
+    /** 最后一次索引时间 */
     lastIndexTime: number | null;
   }> {
-    let lastIndexTime: number | null = null;
-
-    await new Promise<void>((resolve) => {
+    return new Promise((resolve) => {
       chrome.storage.local.get(['lastIndexTime'], (result) => {
-        lastIndexTime = result.lastIndexTime || null;
-        resolve();
+        let lastIndexTime: number | null = (result.lastIndexTime as number) || null;
+        resolve({
+          isIndexing: this.isIndexing,
+          totalBookmarks: this.bookmarks.size,
+          lastIndexTime,
+        });
       });
-    });
-
-    return {
-      isIndexing: this.isIndexing,
-      totalBookmarks: this.bookmarks.size,
-      lastIndexTime,
-    };
+    })
   }
 }
 

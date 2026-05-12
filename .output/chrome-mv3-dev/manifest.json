@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmark Helper",
+  "description": "智能书签搜索 - 使用本地向量模型进行语义搜索",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icon/16.png",
+    "48": "icon/48.png",
+    "128": "icon/128.png"
+  },
+  "permissions": [
+    "bookmarks",
+    "activeTab",
+    "storage",
+    "favicon",
+    "tabs",
+    "scripting"
+  ],
+  "action": {
+    "default_title": "Bookmark Helper",
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "toggle-popup": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L",
+        "mac": "Command+Shift+L"
+      },
+      "description": "打开书签搜索"
+    },
+    "wxt:reload-extension": {
+      "description": "Reload the extension during development",
+      "suggested_key": {
+        "default": "Alt+R"
+      }
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "*://*.google.com/*",
+    "http://localhost/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval' http://localhost:3000; object-src 'self';",
+    "sandbox": "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000; sandbox allow-scripts allow-forms allow-popups allow-modals; child-src 'self';"
+  }
+}

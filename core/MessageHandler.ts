@@ -6,7 +6,6 @@
 import BookmarkIndexer from './BookmarkIndexer';
 import SearchEngine from './SearchEngine';
 import SyncManager from './SyncManager';
-import type { SearchResult, IndexStatus } from '../types';
 
 // 消息类型定义
 interface SearchRequest {
@@ -95,6 +94,7 @@ class MessageHandler {
     message: MessageRequest
   ): Promise<unknown> {
     switch (message.type) {
+      // 搜索
       case 'search': {
         const searchEngine = SearchEngine.getInstance();
         const results = await searchEngine.search(message.query, {
@@ -112,19 +112,19 @@ class MessageHandler {
 
         return resultsWithPath;
       }
-
+      // 重建索引
       case 'rebuild-index': {
         const indexer = BookmarkIndexer.getInstance();
         await indexer.buildIndex();
         return { success: true };
       }
-
+      // 获取索引状态
       case 'get-index-status': {
         const indexer = BookmarkIndexer.getInstance();
         const status = await indexer.getIndexStatus();
         return status;
       }
-
+      // 获取书签路径
       case 'get-bookmark-path': {
         return await this.getBookmarkPath(message.id);
       }

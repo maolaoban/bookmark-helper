@@ -3,15 +3,19 @@
  * 负责加载、缓存嵌入模型
  */
 
-import { pipeline, Pipeline, env } from '@xenova/transformers';
+import { pipeline, type FeatureExtractionPipeline, env } from '@huggingface/transformers';
 
+// env.wasm 对象包含用于配置 WebAssembly 实例行为的标志
+// 设置 ONNX Runtime Web 用于模型推理的线程数，将其设置为 1 将强制禁用多线程
 env.backends.onnx.wasm.numThreads = 1;
+
+env.backends.onnx.wasm.proxy = true;
 
 const MODEL_NAME = 'Xenova/gte-small';
 
 class ModelManager {
   private static instance: ModelManager;
-  private embeddingPipeline: Pipeline | null = null;
+  private embeddingPipeline: FeatureExtractionPipeline | null = null;
   private isLoading = false;
   private loadPromise: Promise<void> | null = null;
 
@@ -53,7 +57,6 @@ class ModelManager {
           'feature-extraction',
           MODEL_NAME,
           {
-            quantized: true,
             progress_callback: (progress: any) => {
               console.log(`[ModelManager] 下载进度: ${Math.round(progress.progress * 100)}%`)
             }

@@ -1,14 +1,10 @@
-import React, { useState, useCallback } from 'react';
-
-interface AppConfig {
-  theme: 'system' | 'light' | 'dark';
-  sortBy: 'dateAdded' | 'dateLastUsed';
-}
+import React, { useState, useCallback } from "react";
+import { AppConfig } from "@/types";
 
 interface SettingsPanelProps {
   config: AppConfig;
-  onSave: (config: AppConfig) => void;
-  onClose: () => void;
+  onSave: (config: AppConfig) => Promise<void> | void;
+  onClose: () => Promise<void> | void;
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -18,19 +14,25 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 }) => {
   const [localConfig, setLocalConfig] = useState<AppConfig>(config);
 
-  const handleThemeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLocalConfig((prev) => ({
-      ...prev,
-      theme: e.target.value as AppConfig['theme'],
-    }));
-  }, []);
+  const handleThemeChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setLocalConfig((prev) => ({
+        ...prev,
+        theme: e.target.value as AppConfig["theme"],
+      }));
+    },
+    [],
+  );
 
-  const handleSortByChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLocalConfig((prev) => ({
-      ...prev,
-      sortBy: e.target.value as AppConfig['sortBy'],
-    }));
-  }, []);
+  const handleSortByChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setLocalConfig((prev) => ({
+        ...prev,
+        sortBy: e.target.value as AppConfig["sortBy"],
+      }));
+    },
+    [],
+  );
 
   const handleSave = useCallback(() => {
     onSave(localConfig);
@@ -39,8 +41,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   const handleReset = useCallback(() => {
     setLocalConfig({
-      theme: 'system',
-      sortBy: 'dateAdded',
+      theme: "system",
+      sortBy: "dateAdded",
     });
   }, []);
 

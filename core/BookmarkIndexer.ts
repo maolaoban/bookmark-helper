@@ -2,9 +2,10 @@
  * 书签索引模块 - 基于 Orama 向量数据库
  */
 
-import { create, insert, insertMultiple, remove, update, save, load, searchVector, count as oramaCount, getByID, MODE_VECTOR_SEARCH, type AnyOrama } from '@orama/orama';
+import { create, insert, insertMultiple, remove, update, save, load, search, searchVector, count as oramaCount, getByID, MODE_HYBRID_SEARCH, MODE_VECTOR_SEARCH, type AnyOrama } from '@orama/orama';
 import { openDB, type IDBPDatabase } from 'idb';
 import ModelManager, { type ModelProgress } from './ModelManager';
+import { buildEmbeddingText } from './TextPreprocessor';
 
 const IDB_NAME = 'bookmark-helper';
 const IDB_VERSION = 1;
@@ -187,14 +188,14 @@ class BookmarkIndexer {
         const node = allBookmarks[i];
         if (!node.url) continue;
 
-        const text = `${node.title} ${node.url}`;
+        const text = buildEmbeddingText(node.title || '', node.url || '');
         const embedding = await modelManager.generateEmbedding(text);
 
         docs.push({
           id: node.id,
           title: node.title || '无标题',
           url: node.url,
-          text: text.toLowerCase(),
+          text,
           embedding,
           dateAdded: node.dateAdded ?? 0,
           dateLastUsed: node.dateLastUsed ?? 0,
@@ -281,14 +282,14 @@ class BookmarkIndexer {
     const modelManager = ModelManager.getInstance();
     await modelManager.loadModel();
 
-    const text = `${node.title} ${node.url}`;
+    const text = buildEmbeddingText(node.title || '', node.url || '');
     const embedding = await modelManager.generateEmbedding(text);
 
     await insert(this.db!, {
       id: node.id,
       title: node.title || '无标题',
       url: node.url!,
-      text: text.toLowerCase(),
+      text,
       embedding,
       dateAdded: node.dateAdded ?? 0,
       dateLastUsed: node.dateLastUsed ?? 0,
@@ -302,13 +303,13 @@ class BookmarkIndexer {
     const modelManager = ModelManager.getInstance();
     await modelManager.loadModel();
 
-    const text = `${node.title} ${node.url}`;
+    const text = buildEmbeddingText(node.title || '', node.url || '');
     const embedding = await modelManager.generateEmbedding(text);
 
     const doc: Record<string, unknown> = {
       title: node.title || '无标题',
       url: node.url!,
-      text: text.toLowerCase(),
+      text,
       embedding,
       dateAdded: node.dateAdded ?? 0,
       dateLastUsed: node.dateLastUsed ?? 0,
@@ -367,6 +368,38 @@ class BookmarkIndexer {
     const raw = await searchVector(db, {
       mode: MODE_VECTOR_SEARCH,
       vector: { property: 'embedding', value: embedding },
+      similarity: options.threshold ?? 0.3,
+      limit: options.limit ?? 20,
+      includeVectors: false,
+    });
+
+    return raw.hits.map((hit) => ({
+      id: hit.id,
+      score: hit.score,
+      document: hit.document as BookmarkDoc,
+    }));
+  }
+
+  async searchHybrid(
+    query: string,
+    embedding: number[],
+    options: { limit?: number; threshold?: number; vectorWeight?: number; textWeight?: number } = {}
+  ): Promise<Array<{ id: string; score: number; document: BookmarkDoc }>> {
+    const db = await this.ensureDB();
+    const raw = await search(db, {
+      mode: MODE_HYBRID_SEARCH,
+      term: query,
+      vector: { property: 'embedding', value: embedding },
+      properties: ['title', 'url', 'text'],
+      boost: {
+        title: 2.0,
+        url: 0.5,
+        text: 1.0,
+      },
+      hybridWeights: {
+        text: options.textWeight ?? 0.6,
+        vector: options.vectorWeight ?? 0.4,
+      },
       similarity: options.threshold ?? 0.3,
       limit: options.limit ?? 20,
       includeVectors: false,

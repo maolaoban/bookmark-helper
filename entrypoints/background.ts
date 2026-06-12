@@ -2,7 +2,10 @@ import BookmarkIndexer from '../core/BookmarkIndexer';
 import SearchEngine from '../core/SearchEngine';
 import SyncManager from '../core/SyncManager';
 import ModelManager from '../core/ModelManager';
+import { buildEnrichedText } from '../core/TextPreprocessor';
 import type { PageMetadata } from '../types';
+
+const INDEX_VERSION = 2;
 
 const ports = new Set<chrome.runtime.Port>();
 
@@ -65,18 +68,12 @@ async function handleMetadataExtracted(meta: PageMetadata): Promise<void> {
     // 只增强一次，避免重复
     if (doc.enrichCount && doc.enrichCount > 0) continue;
 
-    // 构建增强文本
-    const enrichedText = [
+    const enrichedText = buildEnrichedText(
       bm.title || '',
       meta.url,
       meta.description || '',
       meta.bodyText || '',
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .slice(0, 500);
-
-    console.log('enrichedText:', enrichedText);
+    );
 
     if (enrichedText === doc.text) continue;
 
@@ -130,11 +127,17 @@ export default defineBackground(async () => {
   }
 
   const exists = await indexer.hasPersistedData();
-  if (exists) {
+  const storedVersion = (await chrome.storage.local.get(['indexVersion'])).indexVersion as number | undefined;
+
+  if (exists && storedVersion === INDEX_VERSION) {
     await indexer.init();
   } else {
+    if (exists && storedVersion !== INDEX_VERSION) {
+      console.log(`[Background] 索引版本变更 (${storedVersion} → ${INDEX_VERSION})，自动重建索引`);
+    }
     try {
       await indexer.buildIndex(() => broadcastStatus());
+      await chrome.storage.local.set({ indexVersion: INDEX_VERSION });
     } catch (e) {
       console.error('[Background] 初始索引构建失败:', (e as Error).message);
     }

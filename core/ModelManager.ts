@@ -5,18 +5,26 @@
 
 import { pipeline, type FeatureExtractionPipeline, env } from '@huggingface/transformers';
 
-// env.wasm 对象包含用于配置 WebAssembly 实例行为的标志
-// 设置 ONNX Runtime Web 用于模型推理的线程数，将其设置为 1 将强制禁用多线程
-env.backends.onnx.wasm.numThreads = 1;
+if (env.backends.onnx.wasm) {
+  env.backends.onnx.wasm.numThreads = 1;
+  env.backends.onnx.wasm.proxy = true;
+}
 
-env.backends.onnx.wasm.proxy = true;
+// 使用远程模型，从 HuggingFace CDN 下载
+env.allowLocalModels = false;
+env.allowRemoteModels = true;
 
 const MODEL_NAME = 'Xenova/gte-small';
+
+export type ModelProgress = {
+  loaded: number;
+  total: number;
+  file: string;
+};
 
 class ModelManager {
   private static instance: ModelManager;
   private embeddingPipeline: FeatureExtractionPipeline | null = null;
-  private isLoading = false;
   private loadPromise: Promise<void> | null = null;
 
   private constructor() { }
@@ -37,8 +45,9 @@ class ModelManager {
 
   /**
    * 加载嵌入模型
+   * @param onProgress - 模型下载进度回调
    */
-  async loadModel(): Promise<void> {
+  async loadModel(onProgress?: (progress: ModelProgress) => void): Promise<void> {
     // 如果已经加载，直接返回
     if (this.embeddingPipeline) {
       return;
@@ -49,7 +58,6 @@ class ModelManager {
       return this.loadPromise;
     }
 
-    this.isLoading = true;
     this.loadPromise = (async () => {
       try {
         console.log('[ModelManager] 加载嵌入模型:', MODEL_NAME);
@@ -57,17 +65,19 @@ class ModelManager {
           'feature-extraction',
           MODEL_NAME,
           {
-            progress_callback: (progress: any) => {
-              console.log(`[ModelManager] 下载进度: ${Math.round(progress.progress * 100)}%`)
-            }
+            progress_callback: (info: { loaded: number; total: number; file: string }) => {
+              onProgress?.({
+                loaded: info.loaded,
+                total: info.total,
+                file: info.file,
+              });
+            },
           }
         );
         console.log('[ModelManager] 模型加载完成');
       } catch (error) {
         console.error('[ModelManager] 模型加载失败:', error);
         throw error;
-      } finally {
-        this.isLoading = false;
       }
     })();
 

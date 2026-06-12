@@ -22,9 +22,13 @@ export interface SearchResult {
   path?: string;
 }
 
+// 索引阶段
+export type IndexingPhase = 'loading_model' | 'indexing';
+
 // 索引状态
 export interface IndexStatus {
   isIndexing: boolean;
+  phase?: IndexingPhase;
   totalBookmarks: number;
   indexedBookmarks: number;
   lastIndexTime?: number;
@@ -38,7 +42,9 @@ export type MessageType =
   | 'get-index-status'
   | 'search-result'
   | 'index-status'
-  | 'error';
+  | 'error'
+  | 'extract-metadata'
+  | 'metadata-extracted';
 
 export interface Message {
   type: MessageType;
@@ -64,6 +70,17 @@ export interface IndexStatusMessage {
   payload: IndexStatus;
 }
 
+// Content script 提取的页面元信息
+export interface PageMetadata {
+  url: string;
+  title: string;
+  description: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  metaDescription?: string;
+  bodyText?: string;
+}
+
 // 配置类型
 export interface AppConfig {
   theme: 'system' | 'light' | 'dark';
@@ -73,3 +90,4 @@ export interface AppConfig {
   searchLimit?: number;
   similarityThreshold?: number;
 }
+

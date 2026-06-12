@@ -11,9 +11,11 @@ yarn.lock
 *~
 .DS_Store
 
-# Build
+# Build output
 dist/
 build/
+.output/
+.wxt/
 *.zip
 
 # Environment
@@ -28,6 +30,9 @@ Thumbs.db
 # Chrome specific
 chrome-extension-key.pem
 unsigned.crx
+
+# Model files (now using online models)
+public/models/
 
 # Logs
 *.log

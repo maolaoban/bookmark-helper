@@ -100,7 +100,8 @@ class SyncManager {
   private async handleChange(
     action: 'create' | 'remove' | 'update' | 'move',
     bookmark: chrome.bookmarks.BookmarkTreeNode | null,
-    removeInfo?: chrome.bookmarks.RemoveInfo
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    removeInfo?: any
   ): Promise<void> {
     this.pendingChanges++;
 
@@ -120,11 +121,10 @@ class SyncManager {
     // 否则防抖处理
     this.debounceTimer = setTimeout(async () => {
       try {
+        const indexer = BookmarkIndexer.getInstance();
         if (action === 'remove') {
-          // 删除操作需要通过全量重建来处理（简化实现）
-          this.triggerRebuild();
+          await indexer.updateIndex(null, 'remove', removeInfo);
         } else if (bookmark) {
-          const indexer = BookmarkIndexer.getInstance();
           await indexer.updateIndex(bookmark, action);
         }
       } catch (error) {

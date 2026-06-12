@@ -3,9 +3,12 @@ import SearchInput from "./components/SearchInput";
 import ResultList from "./components/ResultList";
 import StatusBar from "./components/StatusBar";
 import SettingsPanel from "./components/SettingsPanel";
-import type { SearchResult, IndexStatus, AppConfig } from "../../types";
+import type {
+  SearchResult,
+  IndexStatus,
+  AppConfig,
+} from "../../types";
 
-// 默认配置
 const DEFAULT_CONFIG: AppConfig = {
   theme: "system",
   sortBy: "dateAdded",
@@ -15,19 +18,21 @@ const DEFAULT_CONFIG: AppConfig = {
   similarityThreshold: 0.3,
 };
 
+const formatBytes = (bytes: number): string => {
+  if (!bytes || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const val = bytes / Math.pow(1024, i);
+  return `${val.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
+};
+
 const App: React.FC = () => {
   const [query, setQuery] = useState("");
-
   const [results, setResults] = useState<SearchResult[]>([]);
-
   const [isLoading, setIsLoading] = useState(false);
-
-  const [indexStatus, setIndexStatus] = useState<any | null>(null);
-
+  const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
   const [config, setConfig] = useState(DEFAULT_CONFIG);
-
   const [error, setError] = useState<string | null>(null);
 
   const getConfigAsync = async () => {
@@ -53,43 +58,32 @@ const App: React.FC = () => {
     }
   };
 
-  // 加载配置
   useEffect(() => {
     getConfigAsync();
     applyTheme();
   }, []);
 
-  // 应用主题
   useEffect(() => {
-    // 监听系统主题变化
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     mediaQuery.addEventListener("change", applyTheme);
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [config.theme]);
 
-  // 获取索引状态
-  const fetchIndexStatus = useCallback(async () => {
-    try {
-      const status = await chrome.runtime.sendMessage({
-        type: "get-index-status",
-      });
-      setIndexStatus(status);
-    } catch (e) {
-      console.error("获取索引状态失败:", e);
-    }
+  // 通过 Port 接收 background 推送的索引状态
+  useEffect(() => {
+    const port = chrome.runtime.connect({ name: "popup" });
+    port.onMessage.addListener((msg) => {
+      if (msg.type === "index-status") {
+        setIndexStatus(msg.payload);
+      }
+    });
+    return () => port.disconnect();
   }, []);
 
-  // 首次加载时获取状态
-  useEffect(() => {
-    fetchIndexStatus();
-  }, [fetchIndexStatus]);
-
-  // 处理搜索
   const handleSearch = useCallback(async (searchQuery: string) => {
     setQuery(searchQuery);
 
     if (!searchQuery.trim()) {
-      setResults([]);
       return;
     }
 
@@ -118,34 +112,52 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 处理重建索引
+  // 索引完成后展示最新书签
+  useEffect(() => {
+    if (query) return;
+    if (indexStatus?.isIndexing) return;
+    if (!indexStatus?.lastIndexTime) return;
+
+    chrome.bookmarks.getRecent(20, (recent) => {
+      const mapped: SearchResult[] = recent
+        .filter((b) => b.url)
+        .map((b) => ({
+          id: b.id,
+          title: b.title || "无标题",
+          url: b.url!,
+          similarity: 0,
+        }));
+      setResults(mapped);
+    });
+  }, [indexStatus?.isIndexing, indexStatus?.lastIndexTime, query]);
+
   const handleRebuildIndex = useCallback(async () => {
-    setIndexStatus({ ...indexStatus, isIndexing: true });
+    setIndexStatus((prev) => ({
+      isIndexing: true,
+      totalBookmarks: prev?.totalBookmarks ?? 0,
+      indexedBookmarks: prev?.indexedBookmarks ?? 0,
+      lastIndexTime: prev?.lastIndexTime,
+    }));
     setError(null);
 
     try {
       await chrome.runtime.sendMessage({ type: "rebuild-index" });
-      await fetchIndexStatus();
     } catch (e) {
       console.error("重建索引失败:", e);
       setError(e instanceof Error ? e.message : "重建索引失败");
-    } finally {
-      setIndexStatus({ ...indexStatus, isIndexing: false });
+      setIndexStatus((prev) => prev ? { ...prev, isIndexing: false } : null);
     }
-  }, [fetchIndexStatus]);
+  }, []);
 
-  // 打开书签
   const handleOpenBookmark = useCallback((url: string) => {
     chrome.tabs.create({ url });
     window.close();
   }, []);
 
-  // 切换设置面板
   const toggleSettings = useCallback(() => {
     setIsSettingsOpen((prev) => !prev);
   }, []);
 
-  // 保存设置
   const handleSaveSettings = async (newConfig: typeof DEFAULT_CONFIG) => {
     try {
       await chrome.storage.local.set({ config: newConfig });
@@ -162,6 +174,7 @@ const App: React.FC = () => {
           value={query}
           onChange={handleSearch}
           placeholder="用自然语言描述你想找的书签..."
+          disabled={indexStatus?.isIndexing || false}
         />
       </div>
 
@@ -196,6 +209,32 @@ const App: React.FC = () => {
           </div>
         )}
       </div>
+
+      {indexStatus?.isIndexing && (
+        <div className="progress-bar-container">
+          <div className="progress-bar">
+            {(indexStatus.totalBookmarks ?? 0) > 0 ? (
+              <div
+                className="progress-bar-fill"
+                style={{
+                  width: `${Math.round(
+                    ((indexStatus.indexedBookmarks ?? 0) / (indexStatus.totalBookmarks || 1)) * 100
+                  )}%`,
+                }}
+              />
+            ) : (
+              <div className="progress-bar-indeterminate" />
+            )}
+          </div>
+          <span className="progress-text">
+            {indexStatus.phase === 'loading_model'
+              ? `正在下载模型... ${formatBytes(indexStatus.indexedBookmarks ?? 0)} / ${formatBytes(indexStatus.totalBookmarks ?? 0)}`
+              : (indexStatus.totalBookmarks ?? 0) > 0
+                ? `正在索引书签: ${indexStatus.indexedBookmarks ?? 0} / ${indexStatus.totalBookmarks ?? 0}`
+                : '正在准备索引...'}
+          </span>
+        </div>
+      )}
 
       <StatusBar
         indexStatus={indexStatus}

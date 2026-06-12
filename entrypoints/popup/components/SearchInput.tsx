@@ -4,12 +4,14 @@ interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
   value,
   onChange,
   placeholder = "搜索书签...",
+  disabled = false,
 }) => {
   const [localValue, setLocalValue] = useState(value);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,8 +67,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
         className="search-input"
         value={localValue}
         onChange={handleChange}
-        placeholder={placeholder}
+        placeholder={disabled ? "索引构建中，请稍候..." : placeholder}
         autoFocus
+        disabled={disabled}
       />
     </div>
   );

@@ -91,6 +91,11 @@ body {
   box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.15);
 }
 
+.search-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .search-input::placeholder {
   color: var(--text-muted);
 }
@@ -257,6 +262,54 @@ body {
   top: -6px;
   font-size: 10px;
   color: var(--text-muted);
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  padding: 8px 16px;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent-color);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-indeterminate {
+  width: 30%;
+  height: 100%;
+  background-color: var(--accent-color);
+  border-radius: 3px;
+  animation: indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% {
+    margin-left: -30%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+.progress-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* Status Bar */

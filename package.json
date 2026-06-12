@@ -12,12 +12,15 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "download-model": "mkdir -p public/models/Xenova/gte-small/onnx && curl -L -o public/models/Xenova/gte-small/config.json https://hf-mirror.com/Xenova/gte-small/resolve/main/config.json && curl -L -o public/models/Xenova/gte-small/tokenizer.json https://hf-mirror.com/Xenova/gte-small/resolve/main/tokenizer.json && curl -L -o public/models/Xenova/gte-small/tokenizer_config.json https://hf-mirror.com/Xenova/gte-small/resolve/main/tokenizer_config.json && curl -L -o public/models/Xenova/gte-small/vocab.txt https://hf-mirror.com/Xenova/gte-small/resolve/main/vocab.txt && curl -L -o public/models/Xenova/gte-small/onnx/model_quantized.onnx https://hf-mirror.com/Xenova/gte-small/resolve/main/onnx/model_quantized.onnx",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "@orama/orama": "^3.1.18",
+    "idb": "^8.0.3",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "@huggingface/transformers": "^4.2.0"
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.40",

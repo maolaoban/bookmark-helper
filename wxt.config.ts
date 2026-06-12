@@ -7,7 +7,7 @@ export default defineConfig({
     name: 'Bookmark Helper',
     version: '1.0.0',
     description: '智能书签搜索 - 使用本地向量模型进行语义搜索',
-    permissions: ['bookmarks', 'activeTab', 'storage', 'favicon'],
+    permissions: ['bookmarks', 'activeTab', 'storage', 'favicon', 'history', 'tabs'],
     action: {
       default_title: 'Bookmark Helper',
     },

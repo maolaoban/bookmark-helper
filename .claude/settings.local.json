@@ -11,7 +11,34 @@
       "Bash(npm cache *)",
       "Bash(npm run *)",
       "Bash(npm ls *)",
-      "Bash(grep \"entrypointsDir\" node_modules/wxt/dist/*.mjs)"
+      "Bash(grep \"entrypointsDir\" node_modules/wxt/dist/*.mjs)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm compile *)",
+      "Bash(pnpm build *)",
+      "Bash(curl -s https://huggingface.co/api/models/Xenova/gte-small)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(s\\) for s in sorted\\(d.get\\('siblings',[]\\), key=lambda x:x['rfilename']\\) if not s['rfilename'].startswith\\('.'\\)]\")",
+      "Bash(python3 *)",
+      "Bash(curl -sL -o config.json \"https://huggingface.co/Xenova/gte-small/resolve/main/config.json\")",
+      "Bash(curl -sL -o tokenizer.json \"https://huggingface.co/Xenova/gte-small/resolve/main/tokenizer.json\")",
+      "Bash(curl -sL -o onnx/model_quantized.onnx \"https://huggingface.co/Xenova/gte-small/resolve/main/onnx/model_quantized.onnx\")",
+      "Bash(curl -sI \"https://huggingface.co/Xenova/gte-small/resolve/main/config.json\")",
+      "Bash(curl -sI \"https://huggingface.co/Xenova/gte-small/resolve/main/tokenizer.json\")",
+      "Bash(curl -sI \"https://huggingface.co/Xenova/gte-small/resolve/main/onnx/model_quantized.onnx\")",
+      "Bash(curl -sL --connect-timeout 10 --max-time 30 -o config.json \"https://huggingface.co/Xenova/gte-small/resolve/main/config.json\")",
+      "Bash(curl -sL --connect-timeout 10 --max-time 30 -o tokenizer.json \"https://huggingface.co/Xenova/gte-small/resolve/main/tokenizer.json\")",
+      "Bash(curl -sL --connect-timeout 10 --max-time 30 -o config.json \"https://hf-mirror.com/Xenova/gte-small/resolve/main/config.json\")",
+      "Bash(curl -sL --connect-timeout 10 --max-time 30 -o tokenizer.json \"https://hf-mirror.com/Xenova/gte-small/resolve/main/tokenizer.json\")",
+      "Bash(curl -L --connect-timeout 10 --max-time 300 -o onnx/model_quantized.onnx \"https://hf-mirror.com/Xenova/gte-small/resolve/main/onnx/model_quantized.onnx\")",
+      "Bash(curl -sL --connect-timeout 10 --max-time 30 -o tokenizer_config.json \"https://hf-mirror.com/Xenova/gte-small/resolve/main/tokenizer_config.json\")",
+      "Bash(curl -sL --connect-timeout 10 --max-time 30 -o special_tokens_map.json \"https://hf-mirror.com/Xenova/gte-small/resolve/main/special_tokens_map.json\")",
+      "Bash(curl -sL --connect-timeout 10 --max-time 30 -o vocab.txt \"https://hf-mirror.com/Xenova/gte-small/resolve/main/vocab.txt\")",
+      "Bash(pnpm ls *)",
+      "Bash(pnpm remove *)",
+      "Bash(git rm *)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "blender"
+  ]
 }

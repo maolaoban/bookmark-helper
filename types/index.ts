@@ -28,10 +28,10 @@ export type IndexingPhase = 'loading_model' | 'indexing';
 // 索引状态
 export interface IndexStatus {
   isIndexing: boolean;
-  phase?: IndexingPhase;
+  phase?: IndexingPhase | null;
   totalBookmarks: number;
   indexedBookmarks: number;
-  lastIndexTime?: number;
+  lastIndexTime?: number | null;
   error?: string;
 }
 
@@ -91,3 +91,47 @@ export interface AppConfig {
   similarityThreshold?: number;
 }
 
+// === Message Protocol Types ===
+
+// Popup -> Background requests
+export interface SearchRequest {
+  type: 'search';
+  query: string;
+  limit?: number;
+  threshold?: number;
+}
+
+export interface RebuildIndexRequest {
+  type: 'rebuild-index';
+}
+
+export interface MetadataExtractedRequest {
+  type: 'metadata-extracted';
+  payload: PageMetadata;
+}
+
+export type BackgroundRequest = SearchRequest | RebuildIndexRequest | MetadataExtractedRequest;
+
+// Background -> Popup responses
+export interface SearchResultResponse {
+  type: 'search-result';
+  payload: SearchResult[];
+}
+
+export interface IndexStatusResponse {
+  type: 'index-status';
+  payload: IndexStatus;
+}
+
+export interface ErrorResponse {
+  type: 'error';
+  payload: { message: string };
+}
+
+export type BackgroundResponse = SearchResultResponse | IndexStatusResponse | ErrorResponse;
+
+// Port message types
+export interface PortMessage {
+  type: 'index-status';
+  payload: IndexStatus;
+}

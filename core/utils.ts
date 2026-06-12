@@ -3,7 +3,7 @@ export function getBookmarkPath(id: string): Promise<string> {
         const walk = (currentId: string, path: string[] = []): void => {
             chrome.bookmarks.get(currentId, (results) => {
                 if (results && results.length > 0) {
-                    const item = results[0];
+                    const item = results[0]!;
                     path.unshift(item.title);
                     if (item.parentId && item.parentId !== '0') {
                         walk(item.parentId, path);

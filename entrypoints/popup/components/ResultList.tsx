@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import type { SearchResult } from "../../../types";
+import styles from "./ResultList.module.css";
 
 interface ResultListProps {
   results: SearchResult[];
@@ -7,7 +8,6 @@ interface ResultListProps {
 }
 
 const ResultList: React.FC<ResultListProps> = ({ results, onOpen }) => {
-  // 获取 favicon URL
   const getFaviconUrl = useCallback((u: string) => {
     const url = new URL(chrome.runtime.getURL("/_favicon/"));
     url.searchParams.set("pageUrl", u);
@@ -15,12 +15,10 @@ const ResultList: React.FC<ResultListProps> = ({ results, onOpen }) => {
     return url.toString();
   }, []);
 
-  // 格式化相似度为百分比
   const formatSimilarity = useCallback((similarity: number) => {
     return `${Math.round(similarity * 100)}%`;
   }, []);
 
-  // 转义 HTML
   const escapeHtml = useCallback((text: string) => {
     const div = document.createElement("div");
     div.textContent = text;
@@ -28,35 +26,33 @@ const ResultList: React.FC<ResultListProps> = ({ results, onOpen }) => {
   }, []);
 
   return (
-    <div className="result-list">
+    <div className={styles.resultList}>
       {results.map((result) => (
         <div
           key={result.id}
-          className="bookmark-item"
+          className={styles.bookmarkItem}
           onClick={() => onOpen(result.url)}
           title={escapeHtml(result.title)}
         >
-          <div className="bookmark-main">
+          <div className={styles.bookmarkMain}>
             <img
-              className="bookmark-favicon"
+              className={styles.bookmarkFavicon}
               src={getFaviconUrl(result.url)}
               alt=""
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-            <span className="bookmark-title">{escapeHtml(result.title)}</span>
+            <span className={styles.bookmarkTitle}>{escapeHtml(result.title)}</span>
           </div>
-          <div className="bookmark-url">{escapeHtml(result.url)}</div>
-          {result.path && <div className="bookmark-path">{result.path}</div>}
-          <div className="bookmark-similarity">
+          <div className={styles.bookmarkUrl}>{escapeHtml(result.url)}</div>
+          {result.path && <div className={styles.bookmarkPath}>{result.path}</div>}
+          <div className={styles.bookmarkSimilarity}>
             <div
-              className="similarity-bar"
+              className={styles.similarityBar}
               style={{ width: formatSimilarity(result.similarity) }}
             />
-            <span className="similarity-text">
-              {formatSimilarity(result.similarity)}
-            </span>
+            <span className={styles.similarityText}>{formatSimilarity(result.similarity)}</span>
           </div>
         </div>
       ))}

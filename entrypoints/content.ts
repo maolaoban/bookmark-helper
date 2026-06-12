@@ -3,14 +3,12 @@ import type { PageMetadata } from '../types';
 export default defineContentScript({
   matches: ['*://*/*'],
   main() {
-    // 页面加载完成后自动提取元数据
     const metadata = extractPageMetadata();
     chrome.runtime.sendMessage({
       type: 'metadata-extracted',
       payload: metadata,
     });
 
-    // 也保留按需提取的监听器
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.type === 'extract-metadata') {
         const freshMetadata = extractPageMetadata();
@@ -33,9 +31,9 @@ function extractPageMetadata(): PageMetadata {
   const ogTitle = getOg('title');
   const ogDescription = getOg('description');
 
-  // 提取正文前 200 字符
   let bodyText = '';
-  const article = document.querySelector('article') || document.querySelector('main') || document.body;
+  const article =
+    document.querySelector('article') || document.querySelector('main') || document.body;
   if (article?.textContent) {
     bodyText = article.textContent.replace(/\s+/g, ' ').trim().slice(0, 200);
   }

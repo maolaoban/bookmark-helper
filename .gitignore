@@ -31,8 +31,6 @@ Thumbs.db
 chrome-extension-key.pem
 unsigned.crx
 
-# Model files (now using online models)
-public/models/
 
 # Logs
 *.log

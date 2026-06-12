@@ -1,6 +1,8 @@
 import BookmarkIndexer from '../core/BookmarkIndexer';
 import SearchEngine from '../core/SearchEngine';
 import SyncManager from '../core/SyncManager';
+import ModelManager from '../core/ModelManager';
+import type { PageMetadata } from '../types';
 
 const ports = new Set<chrome.runtime.Port>();
 
@@ -17,7 +19,8 @@ async function broadcastStatus() {
 
 type MessageRequest =
   | { type: 'search'; query: string; limit?: number; threshold?: number }
-  | { type: 'rebuild-index' };
+  | { type: 'rebuild-index' }
+  | { type: 'metadata-extracted'; payload: PageMetadata };
 
 async function handleMessage(message: MessageRequest): Promise<unknown> {
   const indexer = BookmarkIndexer.getInstance();
@@ -34,8 +37,61 @@ async function handleMessage(message: MessageRequest): Promise<unknown> {
       await broadcastStatus();
       return { success: true };
     }
+    case 'metadata-extracted': {
+      handleMetadataExtracted(message.payload).catch((e) =>
+        console.error('[Background] 元数据增强失败:', e)
+      );
+      return null;
+    }
     default:
       throw new Error(`未知消息类型: ${(message as MessageRequest).type}`);
+  }
+}
+
+async function handleMetadataExtracted(meta: PageMetadata): Promise<void> {
+  const indexer = BookmarkIndexer.getInstance();
+  if (!indexer.isReady()) return;
+
+  // 查找 URL 对应的书签
+  const bookmarks = await chrome.bookmarks.search({ url: meta.url });
+  if (bookmarks.length === 0) return;
+
+  for (const bm of bookmarks) {
+    if (!bm.id) continue;
+
+    const doc = await indexer.getDocument(bm.id);
+    if (!doc) continue;
+
+    // 只增强一次，避免重复
+    if (doc.enrichCount && doc.enrichCount > 0) continue;
+
+    // 构建增强文本
+    const enrichedText = [
+      bm.title || '',
+      meta.url,
+      meta.description || '',
+      meta.bodyText || '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .slice(0, 500);
+
+    console.log('enrichedText:', enrichedText);
+
+    if (enrichedText === doc.text) continue;
+
+    // 生成新嵌入向量
+    const model = ModelManager.getInstance();
+    const embedding = await model.generateEmbedding(enrichedText);
+
+    await indexer.enrichDocument(bm.id, {
+      text: enrichedText,
+      embedding,
+      enrichedAt: Date.now(),
+      enrichCount: 1,
+    });
+
+    console.log('[Background] 已增强书签:', bm.title);
   }
 }
 

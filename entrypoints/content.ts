@@ -3,13 +3,20 @@ import type { PageMetadata } from '../types';
 export default defineContentScript({
   matches: ['*://*/*'],
   main() {
+    // 页面加载完成后自动提取元数据
+    const metadata = extractPageMetadata();
+    chrome.runtime.sendMessage({
+      type: 'metadata-extracted',
+      payload: metadata,
+    });
+
+    // 也保留按需提取的监听器
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      console.log(message);
-      // if (message.type === 'extract-metadata') {
-      //   const metadata = extractPageMetadata();
-      //   sendResponse({ type: 'metadata-extracted', payload: metadata });
-      //   return true;
-      // }
+      if (message.type === 'extract-metadata') {
+        const freshMetadata = extractPageMetadata();
+        sendResponse({ type: 'metadata-extracted', payload: freshMetadata });
+        return true;
+      }
     });
   },
 });

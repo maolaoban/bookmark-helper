@@ -60,7 +60,8 @@ export function rerank(hits: SearchHit[], query: string): SearchHit[] {
       boost += 0.02;
     }
 
-    return { ...hit, score: hit.score + boost };
+    const newScore = Math.min(hit.score + boost, 1);
+    return { ...hit, score: newScore };
   });
 
   return reranked.sort((a, b) => b.score - a.score);

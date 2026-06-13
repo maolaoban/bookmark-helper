@@ -25,6 +25,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onSave, onClose }
     }));
   }, []);
 
+  const handleSearchLimitChange = useCallback((value: number) => {
+    setLocalConfig((prev: AppConfig) => ({
+      ...prev,
+      searchLimit: value,
+    }));
+  }, []);
+
+  const handleSimilarityThresholdChange = useCallback((value: number) => {
+    setLocalConfig((prev: AppConfig) => ({
+      ...prev,
+      similarityThreshold: value,
+    }));
+  }, []);
+
   const handleSave = useCallback(() => {
     onSave(localConfig);
     onClose();
@@ -34,6 +48,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onSave, onClose }
     setLocalConfig({
       theme: "system",
       sortBy: "dateAdded",
+      autoIndex: true,
+      indexThreshold: 0.6,
+      searchLimit: 20,
+      similarityThreshold: 0.3,
     });
   }, []);
 
@@ -42,8 +60,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onSave, onClose }
       <div className={styles.settingsPanel} onClick={(e) => e.stopPropagation()}>
         <div className={styles.settingsHeader}>
           <h3>设置</h3>
-          <button className={styles.closeBtn} onClick={onClose}>
-            ✕
+          <button className={styles.closeBtn} onClick={onClose} aria-label="关闭设置">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
           </button>
         </div>
 
@@ -66,10 +87,58 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onSave, onClose }
             <p className={styles.helpText}>按上次使用时间排序时，若无使用记录则使用添加时间</p>
           </div>
 
+          <div className={styles.formGroup}>
+            <label>搜索结果数量</label>
+            <div className={styles.radioGroup}>
+              {[10, 20, 50].map((limit) => (
+                <label key={limit} className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="searchLimit"
+                    value={limit}
+                    checked={(localConfig.searchLimit ?? 20) === limit}
+                    onChange={() => handleSearchLimitChange(limit)}
+                    className={styles.radioInput}
+                  />
+                  <span className={styles.radioCustom} />
+                  <span>{limit}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>相似度阈值</label>
+            <div className={styles.radioGroup}>
+              {[
+                { value: 0.2, label: "低", desc: "更多结果" },
+                { value: 0.3, label: "中", desc: "推荐" },
+                { value: 0.5, label: "高", desc: "更精确" },
+              ].map((threshold) => (
+                <label key={threshold.value} className={styles.radioLabel}>
+                  <input
+                    type="radio"
+                    name="similarityThreshold"
+                    value={threshold.value}
+                    checked={(localConfig.similarityThreshold ?? 0.3) === threshold.value}
+                    onChange={() => handleSimilarityThresholdChange(threshold.value)}
+                    className={styles.radioInput}
+                  />
+                  <span className={styles.radioCustom} />
+                  <div className={styles.radioContent}>
+                    <span>{threshold.label}</span>
+                    <span className={styles.radioDesc}>{threshold.value} · {threshold.desc}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className={styles.infoSection}>
             <h4>关于</h4>
             <p>Bookmark Helper - 智能书签搜索</p>
             <p className={styles.helpText}>使用本地向量模型进行语义搜索，完全离线工作，保护隐私。</p>
+            <p className={styles.helpText}>页面元数据自动增强：浏览页面时自动提取标题、描述等信息，丰富书签索引，提升搜索准确率。</p>
           </div>
         </div>
 

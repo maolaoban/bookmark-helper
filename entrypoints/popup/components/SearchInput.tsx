@@ -8,62 +8,84 @@ interface SearchInputProps {
   disabled?: boolean;
 }
 
-const SearchInput: React.FC<SearchInputProps> = ({
-  value,
-  onChange,
-  placeholder = "搜索书签...",
-  disabled = false,
-}) => {
-  const [localValue, setLocalValue] = useState(value);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setLocalValue(newValue);
-
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-
-      debounceRef.current = setTimeout(() => {
-        onChange(newValue);
-      }, 300);
+const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
+  (
+    {
+      value,
+      onChange,
+      placeholder = "搜索你的书签... 支持自然语言描述",
+      disabled = false,
     },
-    [onChange],
-  );
+    ref,
+  ) => {
+    const [localValue, setLocalValue] = useState(value);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+    useEffect(() => {
+      setLocalValue(value);
+    }, [value]);
+
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        setLocalValue(newValue);
+
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
+          onChange(newValue);
+        }, 300);
+      },
+      [onChange],
+    );
+
+    const handleClear = useCallback(() => {
+      setLocalValue("");
+      onChange("");
+      if (ref && typeof ref === "object" && ref.current) {
+        ref.current.focus();
       }
-    };
-  }, []);
+    }, [onChange, ref]);
 
-  return (
-    <div className={styles.searchBox}>
-      <svg className={styles.searchIcon} viewBox="0 0 1024 1024" width="20" height="20">
-        <path
-          d="M832 981.333333a21.333333 21.333333 0 0 1-11.333333-3.24l-330-206.266666-330 206.266666a21.333333 21.333333 0 0 1-32.666667-18.093333V181.333333a53.393333 53.393333 0 0 1 53.333333-53.333333h618.666667a53.393333 53.393333 0 0 1 53.333333 53.333333v778.666667a21.333333 21.333333 0 0 1-21.333333 21.333333z"
-          fill="#707070"
+    useEffect(() => {
+      return () => {
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
+      };
+    }, []);
+
+    return (
+      <div className={styles.searchBox}>
+        <svg className={styles.searchIcon} viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input
+          ref={ref}
+          type="text"
+          className={styles.searchInput}
+          value={localValue}
+          onChange={handleChange}
+          placeholder={disabled ? "索引构建中，请稍候..." : placeholder}
+          autoFocus
+          disabled={disabled}
         />
-      </svg>
-      <input
-        type="text"
-        className={styles.searchInput}
-        value={localValue}
-        onChange={handleChange}
-        placeholder={disabled ? "索引构建中，请稍候..." : placeholder}
-        autoFocus
-        disabled={disabled}
-      />
-    </div>
-  );
-};
+        {localValue && (
+          <button className={styles.clearButton} onClick={handleClear} type="button" aria-label="清除搜索">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+    );
+  },
+);
+
+SearchInput.displayName = "SearchInput";
 
 export default SearchInput;

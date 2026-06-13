@@ -7,7 +7,7 @@ export function useSearch() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const search = useCallback(async (searchQuery: string) => {
+  const search = useCallback(async (searchQuery: string, config?: { searchLimit?: number; similarityThreshold?: number }) => {
     setQuery(searchQuery);
 
     if (!searchQuery.trim()) {
@@ -21,8 +21,8 @@ export function useSearch() {
       const searchResults = await chrome.runtime.sendMessage({
         type: "search",
         query: searchQuery,
-        limit: 20,
-        threshold: 0.3,
+        limit: config?.searchLimit ?? 20,
+        threshold: config?.similarityThreshold ?? 0.3,
       });
 
       if (Array.isArray(searchResults)) {

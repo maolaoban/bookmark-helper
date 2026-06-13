@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import SearchInput from "./components/SearchInput";
 import ResultList from "./components/ResultList";
 import StatusBar from "./components/StatusBar";
@@ -14,12 +14,14 @@ const App: React.FC = () => {
   const { query, results, isLoading, error, search, setResults } = useSearch();
   const { config, saveConfig } = useConfig();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const resultListRef = useRef<HTMLDivElement>(null);
 
   useTheme(config.theme);
 
   const { indexStatus, rebuildIndex, loadRecentBookmarks } = useIndexStatus();
 
-  // 索引完成后展示最新书签
   useEffect(() => {
     if (query) return;
     if (indexStatus?.isIndexing) return;
@@ -28,49 +30,150 @@ const App: React.FC = () => {
     loadRecentBookmarks().then(setResults);
   }, [indexStatus?.isIndexing, indexStatus?.lastIndexTime, query, loadRecentBookmarks, setResults]);
 
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [results]);
+
   const handleOpenBookmark = useCallback((url: string) => {
     chrome.tabs.create({ url });
     window.close();
   }, []);
 
+  const handleSearch = useCallback((searchQuery: string) => {
+    search(searchQuery, {
+      searchLimit: config.searchLimit,
+      similarityThreshold: config.similarityThreshold,
+    });
+  }, [search, config.searchLimit, config.similarityThreshold]);
+
   const toggleSettings = useCallback(() => {
     setIsSettingsOpen((prev) => !prev);
   }, []);
 
+  const scrollToSelected = useCallback((index: number) => {
+    if (!resultListRef.current) return;
+    const items = resultListRef.current.querySelectorAll("[data-index]");
+    if (items[index]) {
+      items[index].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSettingsOpen) return;
+
+      const isMac = navigator.platform?.toUpperCase().includes("MAC");
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+      if (modifier && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      if (e.key === "Escape") {
+        if (query) {
+          handleSearch("");
+          searchInputRef.current?.focus();
+        }
+        return;
+      }
+
+      if (results.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => {
+          const next = prev < results.length - 1 ? prev + 1 : 0;
+          scrollToSelected(next);
+          return next;
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prev) => {
+          const next = prev > 0 ? prev - 1 : results.length - 1;
+          scrollToSelected(next);
+          return next;
+        });
+      } else if (e.key === "Enter" && selectedIndex >= 0 && selectedIndex < results.length) {
+        e.preventDefault();
+        if (results[selectedIndex]) {
+          handleOpenBookmark(results[selectedIndex].url);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [results, selectedIndex, query, isSettingsOpen, handleOpenBookmark, scrollToSelected, handleSearch]);
+
+  const recentBookmarks = !query && !isLoading && results.length > 0 && indexStatus?.lastIndexTime ? results : [];
+  const searchResults = query ? results : [];
+
   return (
     <div className={styles.app}>
       <div className={styles.header}>
+        <div className={styles.branding}>
+          <svg className={styles.logo} viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+          <span className={styles.appName}>Bookmark Helper</span>
+        </div>
         <SearchInput
+          ref={searchInputRef}
           value={query}
-          onChange={search}
-          placeholder="用自然语言描述你想找的书签..."
+          onChange={handleSearch}
+          placeholder="搜索你的书签... 支持自然语言描述"
           disabled={indexStatus?.isIndexing || false}
         />
       </div>
 
-      <div className={styles.content}>
-        {error && <div className={styles.errorMessage}>{error}</div>}
+      <div className={styles.content} ref={resultListRef}>
+        {error && (
+          <div className={styles.errorMessage}>
+            <span>{error}</span>
+          </div>
+        )}
 
         {isLoading ? (
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
-            <span>搜索中...</span>
+          <div className={styles.skeletonContainer}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={styles.skeletonItem}>
+                <div className={styles.skeletonIndex} />
+                <div className={styles.skeletonFavicon} />
+                <div className={styles.skeletonContent}>
+                  <div className={styles.skeletonTitle} />
+                  <div className={styles.skeletonSubtitle} />
+                </div>
+              </div>
+            ))}
           </div>
-        ) : results.length > 0 ? (
-          <ResultList results={results} onOpen={handleOpenBookmark} />
+        ) : searchResults.length > 0 ? (
+          <ResultList results={searchResults} onOpen={handleOpenBookmark} selectedIndex={selectedIndex} />
         ) : query ? (
           <div className={styles.emptyState}>
-            <svg className={styles.emptyIcon} viewBox="0 0 1024 1024" width="64" height="64">
-              <path
-                d="M832 981.333333a21.333333 21.333333 0 0 1-11.333333-3.24l-330-206.266666-330 206.266666a21.333333 21.333333 0 0 1-32.666667-18.093333V181.333333a53.393333 53.393333 0 0 1 53.333333-53.333333h618.666667a53.393333 53.393333 0 0 1 53.333333 53.333333v778.666667a21.333333 21.333333 0 0 1-21.333333 21.333333z"
-                fill="#707070"
-              />
+            <svg className={styles.emptyIcon} viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+              <path d="M8 11h6" />
             </svg>
-            <span>未找到相关书签</span>
+            <span className={styles.emptyTitle}>未找到相关书签</span>
+            <span className={styles.emptyHint}>尝试使用不同的关键词或描述</span>
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <span>输入关键词或描述来搜索书签</span>
+            <svg className={styles.emptyIcon} viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            <span className={styles.emptyTitle}>开始搜索你的书签</span>
+            <span className={styles.emptyHint}>输入关键词或用自然语言描述</span>
+            <span className={styles.emptyExample}>例如："前端开发相关的教程"</span>
+            {recentBookmarks.length > 0 && (
+              <div className={styles.recentSection}>
+                <span className={styles.recentDivider}>最近访问</span>
+                <ResultList results={recentBookmarks.slice(0, 5)} onOpen={handleOpenBookmark} />
+              </div>
+            )}
           </div>
         )}
       </div>

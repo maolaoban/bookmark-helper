@@ -1,27 +1,65 @@
 .statusBar {
-  height: 50px;
+  height: auto;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
 }
 
 .statusInfo {
   display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotNormal {
+  background-color: var(--success-color);
+}
+
+.statusDotIndexing {
+  background-color: #f59e0b;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.statusText {
+  display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  gap: 1px;
 }
 
 .statusCount {
+  font-size: 12px;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .statusTime {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
 }
 
@@ -34,14 +72,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
+  gap: 4px;
   height: 32px;
+  padding: 0 8px;
   border: none;
   background: transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   color: var(--text-secondary);
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .iconButton:hover {
@@ -52,4 +91,38 @@
 .iconButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.iconButton:disabled:hover {
+  background-color: transparent;
+}
+
+.iconButtonWithLabel {
+  padding: 0 10px;
+}
+
+.buttonLabel {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.refreshIcon {
+  transition: transform 0.3s ease;
+}
+
+.iconButton:hover .refreshIcon {
+  transform: rotate(90deg);
+}
+
+.refreshIconSpinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

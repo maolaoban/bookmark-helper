@@ -35,6 +35,18 @@
   background-clip: text;
 }
 
+.shortcutHint {
+  margin-left: auto;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
 .content {
   flex: 1;
   overflow-y: auto;

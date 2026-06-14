@@ -1,14 +1,14 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
-import SearchInput from "./components/SearchInput";
-import ResultList from "./components/ResultList";
-import StatusBar from "./components/StatusBar";
-import SettingsPanel from "./components/SettingsPanel";
-import { useSearch } from "./hooks/useSearch";
-import { useConfig } from "./hooks/useConfig";
-import { useTheme } from "./hooks/useTheme";
-import { useIndexStatus } from "./hooks/useIndexStatus";
-import { formatBytes } from "./utils";
-import styles from "./style.module.css";
+import React, { useEffect, useCallback, useRef, useState } from 'react';
+import SearchInput from './components/SearchInput';
+import ResultList from './components/ResultList';
+import StatusBar from './components/StatusBar';
+import SettingsPanel from './components/SettingsPanel';
+import { useSearch } from './hooks/useSearch';
+import { useConfig } from './hooks/useConfig';
+import { useTheme } from './hooks/useTheme';
+import { useIndexStatus } from './hooks/useIndexStatus';
+import { formatBytes } from './utils';
+import styles from './style.module.css';
 
 const App: React.FC = () => {
   const { query, results, isLoading, error, search, setResults } = useSearch();
@@ -39,12 +39,15 @@ const App: React.FC = () => {
     window.close();
   }, []);
 
-  const handleSearch = useCallback((searchQuery: string) => {
-    search(searchQuery, {
-      searchLimit: config.searchLimit,
-      similarityThreshold: config.similarityThreshold,
-    });
-  }, [search, config.searchLimit, config.similarityThreshold]);
+  const handleSearch = useCallback(
+    (searchQuery: string) => {
+      search(searchQuery, {
+        searchLimit: config.searchLimit,
+        similarityThreshold: config.similarityThreshold,
+      });
+    },
+    [search, config.searchLimit, config.similarityThreshold],
+  );
 
   const toggleSettings = useCallback(() => {
     setIsSettingsOpen((prev) => !prev);
@@ -52,9 +55,9 @@ const App: React.FC = () => {
 
   const scrollToSelected = useCallback((index: number) => {
     if (!resultListRef.current) return;
-    const items = resultListRef.current.querySelectorAll("[data-index]");
+    const items = resultListRef.current.querySelectorAll('[data-index]');
     if (items[index]) {
-      items[index].scrollIntoView({ block: "nearest", behavior: "smooth" });
+      items[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, []);
 
@@ -62,18 +65,18 @@ const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isSettingsOpen) return;
 
-      const isMac = navigator.platform?.toUpperCase().includes("MAC");
+      const isMac = navigator.platform?.toUpperCase().includes('MAC');
       const modifier = isMac ? e.metaKey : e.ctrlKey;
 
-      if (modifier && e.key === "k") {
+      if (modifier && e.key === 'k') {
         e.preventDefault();
         searchInputRef.current?.focus();
         return;
       }
 
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         if (query) {
-          handleSearch("");
+          handleSearch('');
           searchInputRef.current?.focus();
         }
         return;
@@ -81,21 +84,21 @@ const App: React.FC = () => {
 
       if (results.length === 0) return;
 
-      if (e.key === "ArrowDown") {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((prev) => {
           const next = prev < results.length - 1 ? prev + 1 : 0;
           scrollToSelected(next);
           return next;
         });
-      } else if (e.key === "ArrowUp") {
+      } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex((prev) => {
           const next = prev > 0 ? prev - 1 : results.length - 1;
           scrollToSelected(next);
           return next;
         });
-      } else if (e.key === "Enter" && selectedIndex >= 0 && selectedIndex < results.length) {
+      } else if (e.key === 'Enter' && selectedIndex >= 0 && selectedIndex < results.length) {
         e.preventDefault();
         if (results[selectedIndex]) {
           handleOpenBookmark(results[selectedIndex].url);
@@ -103,21 +106,43 @@ const App: React.FC = () => {
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [results, selectedIndex, query, isSettingsOpen, handleOpenBookmark, scrollToSelected, handleSearch]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [
+    results,
+    selectedIndex,
+    query,
+    isSettingsOpen,
+    handleOpenBookmark,
+    scrollToSelected,
+    handleSearch,
+  ]);
 
-  const recentBookmarks = !query && !isLoading && results.length > 0 && indexStatus?.lastIndexTime ? results : [];
+  const recentBookmarks =
+    !query && !isLoading && results.length > 0 && indexStatus?.lastIndexTime ? results : [];
   const searchResults = query ? results : [];
 
   return (
     <div className={styles.app}>
       <div className={styles.header}>
         <div className={styles.branding}>
-          <svg className={styles.logo} viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            className={styles.logo}
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
           </svg>
           <span className={styles.appName}>Bookmark Helper</span>
+          <kbd className={styles.shortcutHint}>
+            {navigator.platform?.toUpperCase().includes('MAC') ? '\u2318+Shift+L' : 'Ctrl+Shift+L'}
+          </kbd>
         </div>
         <SearchInput
           ref={searchInputRef}
@@ -149,10 +174,24 @@ const App: React.FC = () => {
             ))}
           </div>
         ) : searchResults.length > 0 ? (
-          <ResultList results={searchResults} onOpen={handleOpenBookmark} selectedIndex={selectedIndex} />
+          <ResultList
+            results={searchResults}
+            onOpen={handleOpenBookmark}
+            selectedIndex={selectedIndex}
+          />
         ) : query ? (
           <div className={styles.emptyState}>
-            <svg className={styles.emptyIcon} viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              className={styles.emptyIcon}
+              viewBox="0 0 24 24"
+              width="48"
+              height="48"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
               <path d="M8 11h6" />
@@ -162,12 +201,21 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <svg className={styles.emptyIcon} viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              className={styles.emptyIcon}
+              viewBox="0 0 24 24"
+              width="48"
+              height="48"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
             </svg>
             <span className={styles.emptyTitle}>开始搜索你的书签</span>
             <span className={styles.emptyHint}>输入关键词或用自然语言描述</span>
-            <span className={styles.emptyExample}>例如："前端开发相关的教程"</span>
             {recentBookmarks.length > 0 && (
               <div className={styles.recentSection}>
                 <span className={styles.recentDivider}>最近访问</span>
@@ -195,11 +243,11 @@ const App: React.FC = () => {
             )}
           </div>
           <span className={styles.progressText}>
-            {indexStatus.phase === "loading_model"
+            {indexStatus.phase === 'loading_model'
               ? `正在下载模型... ${formatBytes(indexStatus.indexedBookmarks ?? 0)} / ${formatBytes(indexStatus.totalBookmarks ?? 0)}`
               : (indexStatus.totalBookmarks ?? 0) > 0
                 ? `正在索引书签: ${indexStatus.indexedBookmarks ?? 0} / ${indexStatus.totalBookmarks ?? 0}`
-                : "正在准备索引..."}
+                : '正在准备索引...'}
           </span>
         </div>
       )}

@@ -64,6 +64,21 @@ export class BookmarkIndexer {
 
   constructor(private modelManager: ModelManager) {}
 
+  private async saveIndexingState(): Promise<void> {
+    await chrome.storage.session.set({
+      indexingState: {
+        isIndexing: this.isIndexing,
+        phase: this.indexingPhase,
+        current: this.indexingProgress.current,
+        total: this.indexingProgress.total,
+      },
+    });
+  }
+
+  private async clearIndexingState(): Promise<void> {
+    await chrome.storage.session.remove('indexingState');
+  }
+
   async init(): Promise<void> {
     if (this.isInitialized) return;
 
@@ -152,6 +167,7 @@ export class BookmarkIndexer {
     this.isIndexing = true;
     this.indexingPhase = 'loading_model';
     this.indexingProgress = { current: 0, total: 0 };
+    await this.saveIndexingState();
     onProgress?.(0, 0);
 
     try {
@@ -162,6 +178,7 @@ export class BookmarkIndexer {
 
       this.indexingPhase = 'indexing';
       this.indexingProgress = { current: 0, total: 0 };
+      await this.saveIndexingState();
       onProgress?.(0, 0);
 
       const allBookmarks = await this.getAllBookmarks();
@@ -170,6 +187,7 @@ export class BookmarkIndexer {
       console.log(`[BookmarkIndexer] 开始索引 ${total} 个书签`);
 
       this.indexingProgress = { current: 0, total };
+      await this.saveIndexingState();
       onProgress?.(0, total);
 
       this.db = create({ schema: BOOKMARK_SCHEMA });
@@ -200,6 +218,7 @@ export class BookmarkIndexer {
         this.indexingProgress = { current: Math.min(i + 1, total), total };
 
         if (docs.length >= BATCH_SIZE || i === allBookmarks.length - 1) {
+          await this.saveIndexingState();
           onProgress?.(this.indexingProgress.current, this.indexingProgress.total);
         }
       }
@@ -219,6 +238,7 @@ export class BookmarkIndexer {
     } finally {
       this.isIndexing = false;
       this.indexingProgress = { current: 0, total: 0 };
+      await this.clearIndexingState();
     }
   }
 
@@ -414,6 +434,18 @@ export class BookmarkIndexer {
         phase: this.indexingPhase,
         totalBookmarks: this.indexingProgress.total,
         indexedBookmarks: this.indexingProgress.current,
+        lastIndexTime: null,
+      };
+    }
+
+    // 检查 session storage 中是否有未完成的索引（SW 重启后恢复）
+    const session = await chrome.storage.session.get('indexingState');
+    if (session.indexingState?.isIndexing) {
+      return {
+        isIndexing: true,
+        phase: session.indexingState.phase,
+        totalBookmarks: session.indexingState.total,
+        indexedBookmarks: session.indexingState.current,
         lastIndexTime: null,
       };
     }

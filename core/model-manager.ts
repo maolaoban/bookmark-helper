@@ -7,11 +7,15 @@ import { pipeline, type FeatureExtractionPipeline, env } from '@huggingface/tran
 
 if (env.backends.onnx.wasm) {
   env.backends.onnx.wasm.numThreads = 1;
+  env.backends.onnx.wasm.proxy = true;
 }
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.cacheDir = 'cache';
+
+const HUGGINGFACE_HOST = 'https://huggingface.co';
+const MIRROR_HOST = 'https://hf-mirror.com';
 
 const MODEL_NAME = 'Xenova/gte-small';
 
@@ -24,9 +28,30 @@ export type ModelProgress = {
 export class ModelManager {
   private embeddingPipeline: FeatureExtractionPipeline | null = null;
   private loadPromise: Promise<void> | null = null;
+  private static remoteHostResolved = false;
 
   isLoaded(): boolean {
     return this.embeddingPipeline !== null;
+  }
+
+  private static async resolveRemoteHost(): Promise<void> {
+    if (ModelManager.remoteHostResolved) return;
+    ModelManager.remoteHostResolved = true;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      await fetch(`${HUGGINGFACE_HOST}/api/models/${MODEL_NAME}`, {
+        method: 'HEAD',
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      env.remoteHost = HUGGINGFACE_HOST;
+      console.log('[ModelManager] 使用 HuggingFace 原站');
+    } catch {
+      env.remoteHost = MIRROR_HOST;
+      console.log('[ModelManager] HuggingFace 不可达，使用镜像站');
+    }
   }
 
   async loadModel(onProgress?: (progress: ModelProgress) => void): Promise<void> {
@@ -40,6 +65,7 @@ export class ModelManager {
 
     this.loadPromise = (async () => {
       try {
+        await ModelManager.resolveRemoteHost();
         console.log('[ModelManager] 加载嵌入模型:', MODEL_NAME);
         this.embeddingPipeline = await pipeline(
           'feature-extraction',

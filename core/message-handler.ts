@@ -8,10 +8,12 @@ import type { SearchEngine } from './search-engine';
 import type { PageMetadata } from '../types';
 import { buildEnrichedText } from './text-preprocessor';
 import type { ModelManager } from './model-manager';
+import { startKeepalive, stopKeepalive } from './keepalive';
 
 export type MessageRequest =
   | { type: 'search'; query: string; limit?: number; threshold?: number }
   | { type: 'rebuild-index' }
+  | { type: 'get-index-status' }
   | { type: 'metadata-extracted'; payload: PageMetadata };
 
 export interface MessageHandlerDeps {
@@ -35,9 +37,17 @@ export async function handleMessage(
       });
     }
     case 'rebuild-index': {
-      await bookmarkIndexer.buildIndex(() => broadcastStatus());
-      await broadcastStatus();
-      return { success: true };
+      startKeepalive();
+      try {
+        await bookmarkIndexer.buildIndex(() => broadcastStatus());
+        await broadcastStatus();
+        return { success: true };
+      } finally {
+        stopKeepalive();
+      }
+    }
+    case 'get-index-status': {
+      return await bookmarkIndexer.getIndexStatus();
     }
     case 'metadata-extracted': {
       handleMetadataExtracted(message.payload, deps).catch((e) =>

@@ -1,6 +1,7 @@
 import { createContainer } from '../core/container';
 import { handleMessage, type MessageRequest } from '../core/message-handler';
 import { PortManager } from '../core/port-manager';
+import { startKeepalive, stopKeepalive } from '../core/keepalive';
 
 const INDEX_VERSION = 2;
 
@@ -52,7 +53,11 @@ export default defineBackground(async () => {
     await chrome.storage.local.get(['indexVersion'])
   ).indexVersion as number | undefined;
 
-  if (exists && storedVersion === INDEX_VERSION) {
+  // 检查是否有未完成的索引（SW 重启恢复）
+  const session = await chrome.storage.session.get('indexingState');
+  const hasUnfinishedIndex = session.indexingState?.isIndexing === true;
+
+  if (exists && storedVersion === INDEX_VERSION && !hasUnfinishedIndex) {
     await bookmarkIndexer.init();
   } else {
     if (exists && storedVersion !== INDEX_VERSION) {
@@ -60,11 +65,17 @@ export default defineBackground(async () => {
         `[Background] 索引版本变更 (${storedVersion} → ${INDEX_VERSION})，自动重建索引`,
       );
     }
+    if (hasUnfinishedIndex) {
+      console.log('[Background] 检测到未完成的索引，重新构建');
+    }
+    startKeepalive();
     try {
       await bookmarkIndexer.buildIndex(() => broadcastStatus());
       await chrome.storage.local.set({ indexVersion: INDEX_VERSION });
     } catch (error) {
       console.error('[Background] 初始索引构建失败:', (error as Error).message);
+    } finally {
+      stopKeepalive();
     }
   }
 

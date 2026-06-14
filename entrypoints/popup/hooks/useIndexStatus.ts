@@ -11,6 +11,12 @@ export function useIndexStatus() {
         setIndexStatus(msg.payload);
       }
     });
+    // 主动查询一次当前状态（SW 重启后恢复）
+    chrome.runtime.sendMessage({ type: "get-index-status" }).then((status) => {
+      if (status && typeof status === "object" && "isIndexing" in status) {
+        setIndexStatus(status as IndexStatus);
+      }
+    }).catch(() => {});
     return () => port.disconnect();
   }, []);
 

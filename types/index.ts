@@ -105,12 +105,16 @@ export interface RebuildIndexRequest {
   type: 'rebuild-index';
 }
 
+export interface GetIndexStatusRequest {
+  type: 'get-index-status';
+}
+
 export interface MetadataExtractedRequest {
   type: 'metadata-extracted';
   payload: PageMetadata;
 }
 
-export type BackgroundRequest = SearchRequest | RebuildIndexRequest | MetadataExtractedRequest;
+export type BackgroundRequest = SearchRequest | RebuildIndexRequest | GetIndexStatusRequest | MetadataExtractedRequest;
 
 // Background -> Popup responses
 export interface SearchResultResponse {

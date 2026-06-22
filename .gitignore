@@ -35,6 +35,9 @@ unsigned.crx
 .claude/
 .mimocode/
 
+# Local models (remote download at runtime)
+models/
+
 # Logs
 *.log
 npm-debug.log*

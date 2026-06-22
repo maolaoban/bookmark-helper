@@ -84,6 +84,7 @@ export interface PageMetadata {
 // 配置类型
 export interface AppConfig {
   theme: 'system' | 'light' | 'dark';
+  locale: 'system' | 'zh-CN' | 'en';
   sortBy: 'dateAdded' | 'dateLastUsed';
   autoIndex?: boolean;
   indexThreshold?: number;

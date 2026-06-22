@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SearchInput from './components/SearchInput';
 import ResultList from './components/ResultList';
 import StatusBar from './components/StatusBar';
@@ -11,6 +12,7 @@ import { formatBytes } from './utils';
 import styles from './style.module.css';
 
 const App: React.FC = () => {
+  const { t } = useTranslation();
   const { query, results, isLoading, error, search, setResults } = useSearch();
   const { config, saveConfig } = useConfig();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
@@ -148,7 +150,7 @@ const App: React.FC = () => {
           ref={searchInputRef}
           value={query}
           onChange={handleSearch}
-          placeholder="搜索你的书签... 支持自然语言描述"
+          placeholder={t('searchPlaceholder')}
           disabled={indexStatus?.isIndexing || false}
         />
       </div>
@@ -196,8 +198,8 @@ const App: React.FC = () => {
               <path d="m21 21-4.35-4.35" />
               <path d="M8 11h6" />
             </svg>
-            <span className={styles.emptyTitle}>未找到相关书签</span>
-            <span className={styles.emptyHint}>尝试使用不同的关键词或描述</span>
+            <span className={styles.emptyTitle}>{t('noResults')}</span>
+            <span className={styles.emptyHint}>{t('noResultsHint')}</span>
           </div>
         ) : (
           <div className={styles.emptyState}>
@@ -214,11 +216,11 @@ const App: React.FC = () => {
             >
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
             </svg>
-            <span className={styles.emptyTitle}>开始搜索你的书签</span>
-            <span className={styles.emptyHint}>输入关键词或用自然语言描述</span>
+            <span className={styles.emptyTitle}>{t('startSearch')}</span>
+            <span className={styles.emptyHint}>{t('startSearchHint')}</span>
             {recentBookmarks.length > 0 && (
               <div className={styles.recentSection}>
-                <span className={styles.recentDivider}>最近访问</span>
+                <span className={styles.recentDivider}>{t('recentAccess')}</span>
                 <ResultList results={recentBookmarks.slice(0, 5)} onOpen={handleOpenBookmark} />
               </div>
             )}
@@ -244,10 +246,10 @@ const App: React.FC = () => {
           </div>
           <span className={styles.progressText}>
             {indexStatus.phase === 'loading_model'
-              ? `正在下载模型... ${formatBytes(indexStatus.indexedBookmarks ?? 0)} / ${formatBytes(indexStatus.totalBookmarks ?? 0)}`
+              ? `${t('downloadingModel')} ${formatBytes(indexStatus.indexedBookmarks ?? 0)} / ${formatBytes(indexStatus.totalBookmarks ?? 0)}`
               : (indexStatus.totalBookmarks ?? 0) > 0
-                ? `正在索引书签: ${indexStatus.indexedBookmarks ?? 0} / ${indexStatus.totalBookmarks ?? 0}`
-                : '正在准备索引...'}
+                ? `${t('indexingBookmarks')}: ${indexStatus.indexedBookmarks ?? 0} / ${indexStatus.totalBookmarks ?? 0}`
+                : t('preparingIndex')}
           </span>
         </div>
       )}

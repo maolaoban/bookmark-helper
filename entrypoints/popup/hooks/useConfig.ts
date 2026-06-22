@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import type { AppConfig } from "../../../types";
+import { changeLanguage } from "../i18n";
 
 const DEFAULT_CONFIG: AppConfig = {
   theme: "system",
+  locale: "system",
   sortBy: "dateAdded",
   autoIndex: true,
   indexThreshold: 0.6,
@@ -18,7 +20,9 @@ export function useConfig() {
       try {
         const stored = await chrome.storage.local.get(["config"]);
         if (stored.config) {
-          setConfig(stored.config as AppConfig);
+          const loadedConfig = stored.config as AppConfig;
+          setConfig(loadedConfig);
+          changeLanguage(loadedConfig.locale || "system");
         }
       } catch (e) {
         console.error("加载配置失败:", e);

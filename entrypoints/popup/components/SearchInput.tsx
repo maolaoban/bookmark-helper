@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./SearchInput.module.css";
 
 interface SearchInputProps {
@@ -8,16 +9,18 @@ interface SearchInputProps {
   disabled?: boolean;
 }
 
-const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
+const SearchInputInner = React.forwardRef<HTMLInputElement, SearchInputProps>(
   (
     {
       value,
       onChange,
-      placeholder = "搜索你的书签... 支持自然语言描述",
+      placeholder,
       disabled = false,
     },
     ref,
   ) => {
+    const { t } = useTranslation();
+    const finalPlaceholder = placeholder || t('searchPlaceholder');
     const [localValue, setLocalValue] = useState(value);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -69,12 +72,12 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           className={styles.searchInput}
           value={localValue}
           onChange={handleChange}
-          placeholder={disabled ? "索引构建中，请稍候..." : placeholder}
+          placeholder={disabled ? t('searchDisabled') : finalPlaceholder}
           autoFocus
           disabled={disabled}
         />
         {localValue && (
-          <button className={styles.clearButton} onClick={handleClear} type="button" aria-label="清除搜索">
+          <button className={styles.clearButton} onClick={handleClear} type="button" aria-label={t('clearSearch')}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6 6 18" />
               <path d="m6 6 12 12" />
@@ -86,6 +89,11 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
   },
 );
 
+SearchInputInner.displayName = "SearchInput";
+
+const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>((props, ref) => (
+  <SearchInputInner {...props} ref={ref} />
+));
 SearchInput.displayName = "SearchInput";
 
 export default SearchInput;

@@ -1,0 +1,10 @@
+{
+  "extDescription": {
+    "message": "Smart Bookmark Search - Semantic search using local vector model",
+    "description": "Extension description"
+  },
+  "togglePopup": {
+    "message": "Open bookmark search",
+    "description": "Toggle popup command description"
+  }
+}

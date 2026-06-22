@@ -1,0 +1,10 @@
+{
+  "extDescription": {
+    "message": "智能书签搜索 - 使用本地向量模型进行语义搜索",
+    "description": "Extension description"
+  },
+  "togglePopup": {
+    "message": "打开书签搜索",
+    "description": "Toggle popup command description"
+  }
+}

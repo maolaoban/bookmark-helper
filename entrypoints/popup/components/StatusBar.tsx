@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { IndexStatus } from "../../../types";
 import styles from "./StatusBar.module.css";
 
@@ -15,10 +16,11 @@ const StatusBar: React.FC<StatusBarProps> = ({
   onRebuild,
   onOpenSettings,
 }) => {
+  const { t, i18n } = useTranslation();
   const formatTime = (timestamp?: number | null) => {
-    if (!timestamp) return "未知";
+    if (!timestamp) return t('unknownTime');
     const date = new Date(timestamp);
-    return date.toLocaleString("zh-CN", {
+    return date.toLocaleString(i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US', {
       month: "numeric",
       day: "numeric",
       hour: "2-digit",
@@ -36,15 +38,15 @@ const StatusBar: React.FC<StatusBarProps> = ({
           {indexStatus && indexStatus.lastIndexTime ? (
             <div className={styles.statusText}>
               <span className={styles.statusCount}>
-                {indexStatus.totalBookmarks ?? 0} 个书签
+                {indexStatus.totalBookmarks ?? 0} {t('bookmarksCount')}
               </span>
               <span className={styles.statusTime}>
-                更新于 {formatTime(indexStatus.lastIndexTime)}
+                {t('updatedAt')} {formatTime(indexStatus.lastIndexTime)}
               </span>
             </div>
           ) : (
             <div className={styles.statusText}>
-              <span className={styles.statusCount}>未建立索引</span>
+              <span className={styles.statusCount}>{t('noIndex')}</span>
             </div>
           )}
         </div>
@@ -55,7 +57,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
           className={styles.iconButton}
           onClick={onRebuild}
           disabled={isIndexing}
-          title="重建索引"
+          title={t('rebuildIndex')}
         >
           <svg
             className={`${styles.refreshIcon} ${isIndexing ? styles.refreshIconSpinning : ""}`}
@@ -78,7 +80,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
         <button
           className={`${styles.iconButton} ${styles.iconButtonWithLabel}`}
           onClick={onOpenSettings}
-          title="设置"
+          title={t('settings')}
         >
           <svg
             viewBox="0 0 24 24"
@@ -93,7 +95,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
-          <span className={styles.buttonLabel}>设置</span>
+          <span className={styles.buttonLabel}>{t('settings')}</span>
         </button>
       </div>
     </div>

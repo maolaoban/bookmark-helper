@@ -6,7 +6,8 @@ export default defineConfig({
   manifest: {
     name: 'Bookmark Helper',
     version: '1.0.0',
-    description: '智能书签搜索 - 使用本地向量模型进行语义搜索',
+    default_locale: 'zh_CN',
+    description: '__MSG_extDescription__',
     permissions: ['bookmarks', 'activeTab', 'storage', 'favicon', 'history', 'tabs', 'alarms'],
     host_permissions: ["http://*/*", "https://*/*"],
     content_security_policy: {
@@ -21,7 +22,7 @@ export default defineConfig({
           default: 'Ctrl+Shift+L',
           mac: 'Command+Shift+L',
         },
-        description: '打开书签搜索',
+        description: '__MSG_togglePopup__',
       },
     },
   }

@@ -16,6 +16,7 @@ Bookmark Helper
 - 支持增量更新（书签增删改时自动更新索引）
 - 页面元数据自动增强：浏览页面时自动提取 meta 信息，丰富书签索引文本
 - 提供简洁美观的弹出窗口界面，结果可一键打开
+- 多语言支持：界面支持中文和英文，可在设置中切换
 
 ### 1.3 非功能性目标
 
@@ -37,6 +38,7 @@ Bookmark Helper
 | 类型系统 | TypeScript (strict mode) | 提升代码健壮性，便于维护 |
 | 向量模型 | Xenova/gte-small | 384 维，英文语义效果好，Transformers.js 原生支持 |
 | 向量数据库 | Orama | 纯 JS，支持向量 + 关键词混合检索 (MODE_HYBRID_SEARCH)，轻量易集成 |
+| 国际化 | i18next + react-i18next | 轻量 i18n 方案，支持中英文切换 |
 | 持久化存储 | IndexedDB (通过 Orama 内置) + chrome.storage.local + chrome.storage.session | Orama 负责向量索引持久化，chrome.storage.local 存储配置及索引版本号，chrome.storage.session 存储索引进度（防 SW 重启丢失） |
 | 构建工具 | Vite (WXT 内置) | 快速 HMR，生产打包优化 |
 | 代码规范 | ESLint + Prettier | 统一代码风格，提升可维护性 |
@@ -101,6 +103,11 @@ bookmark-helper/
 │       │   ├── useConfig.ts
 │       │   ├── useTheme.ts
 │       │   └── useIndexStatus.ts
+│       ├── i18n/                  # 国际化
+│       │   ├── index.ts           # i18n 配置
+│       │   └── locales/           # 翻译文件
+│       │       ├── zh-CN.json
+│       │       └── en.json
 │       └── components/            # 组件 + CSS Modules
 │           ├── SearchInput.tsx
 │           ├── ResultList.tsx
@@ -140,7 +147,8 @@ bookmark-helper/
 | SearchInput | `components/SearchInput.tsx` | 搜索输入框，防抖处理 |
 | ResultList | `components/ResultList.tsx` | 搜索结果列表，相似度显示 |
 | StatusBar | `components/StatusBar.tsx` | 状态栏，索引状态显示 |
-| SettingsPanel | `components/SettingsPanel.tsx` | 设置面板 |
+| SettingsPanel | `components/SettingsPanel.tsx` | 设置面板（含语言切换） |
+| i18n | `i18n/index.ts` | 国际化配置，语言切换 |
 
 #### 自定义 Hooks
 

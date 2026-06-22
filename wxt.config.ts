@@ -8,7 +8,7 @@ export default defineConfig({
     version: '1.0.0',
     default_locale: 'zh_CN',
     description: '__MSG_extDescription__',
-    permissions: ['bookmarks', 'activeTab', 'storage', 'favicon', 'history', 'tabs', 'alarms'],
+    permissions: ['bookmarks', 'storage', 'favicon', 'tabs', 'alarms'],
     host_permissions: ["http://*/*", "https://*/*"],
     content_security_policy: {
       "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"

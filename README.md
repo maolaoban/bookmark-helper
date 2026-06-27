@@ -11,7 +11,8 @@ Bookmark Helper
 核心功能包括：
 
 - 自动索引用户所有书签（标题 + URL），生成向量并持久化存储
-- 混合搜索：向量语义搜索 + BM25 关键词搜索，结合后处理重排序，提升搜索准确率
+- 混合搜索：QPS 算法（针对描述性文本优化）+ 向量语义搜索
+- 中文分词支持：使用 mandarin tokenizer，准确处理中文查询
 - 自适应查询权重：根据查询类型（关键词/语义/混合）动态调整文本与向量搜索的权重比例
 - 支持增量更新（书签增删改时自动更新索引）
 - 页面元数据自动增强：浏览页面时自动提取 meta 信息，丰富书签索引文本
@@ -37,7 +38,9 @@ Bookmark Helper
 | UI 框架 | React 19 | 声明式组件，生态丰富 |
 | 类型系统 | TypeScript (strict mode) | 提升代码健壮性，便于维护 |
 | 向量模型 | Xenova/gte-small | 384 维，英文语义效果好，Transformers.js 原生支持 |
-| 向量数据库 | Orama | 纯 JS，支持向量 + 关键词混合检索 (MODE_HYBRID_SEARCH)，轻量易集成 |
+| 搜索算法 | QPS (Orama Plugin) | 针对描述性文本优化的高性能搜索算法 |
+| 中文分词 | @orama/tokenizers/mandarin | Orama 官方中文分词器，准确处理中文 |
+| 向量数据库 | Orama | 纯 JS，支持向量 + 关键词混合检索，轻量易集成 |
 | 国际化 | i18next + react-i18next | 轻量 i18n 方案，支持中英文切换 |
 | 持久化存储 | IndexedDB (通过 Orama 内置) + chrome.storage.local + chrome.storage.session | Orama 负责向量索引持久化，chrome.storage.local 存储配置及索引版本号，chrome.storage.session 存储索引进度（防 SW 重启丢失） |
 | 构建工具 | Vite (WXT 内置) | 快速 HMR，生产打包优化 |
@@ -60,12 +63,12 @@ Bookmark Helper
     ├── MessageHandler (消息路由)
     ├── Keepalive (SW 保活，防索引期间被杀)
     ├── Transformers.js Pipeline (嵌入模型: gte-small)
-    ├── Orama DB (向量索引管理，混合搜索)
-    ├── SearchEngine (查询检测 + 混合搜索 + 重排序)
+    ├── Orama DB (向量索引管理，QPS 搜索算法)
+    ├── SearchEngine (查询检测 + 混合搜索)
     ├── SyncManager (书签变化监听)
     └── ErrorHandler (重试机制)
             ↕ 读取/监听书签变化
-[Content Script] → 自动提取页面 meta/og 元数据 → Background 增强索引
+[Content Script] → 自动提取页面 meta 元数据 → Background 增强索引
 [IndexedDB] ← 存储 Orama 向量数据库快照
 [chrome.storage.local] ← 存储配置、索引版本号、上次索引时间等
 [chrome.storage.session] ← 存储索引进度（SW 重启恢复）
@@ -77,8 +80,8 @@ Bookmark Helper
 bookmark-helper/
 ├── core/                          # 核心业务逻辑
 │   ├── model-manager.ts           # 模型管理（自动检测 HuggingFace 镜像）
-│   ├── bookmark-indexer.ts        # 书签索引
-│   ├── search-engine.ts           # 搜索引擎
+│   ├── bookmark-indexer.ts        # 书签索引（QPS 算法 + 中文分词）
+│   ├── search-engine.ts           # 搜索引擎（查询检测 + 自适应权重）
 │   ├── sync-manager.ts            # 同步管理
 │   ├── text-preprocessor.ts       # 文本预处理
 │   ├── container.ts               # 依赖注入容器
@@ -91,7 +94,7 @@ bookmark-helper/
 │   └── __tests__/                 # 单元测试
 ├── entrypoints/
 │   ├── background.ts              # Service Worker
-│   ├── content.ts                 # Content Script
+│   ├── content.ts                 # Content Script（使用 innerText 提取文本）
 │   └── popup/                     # 弹出窗口
 │       ├── App.tsx
 │       ├── main.tsx
@@ -127,8 +130,8 @@ bookmark-helper/
 | 模块 | 文件 | 职责 |
 |------|------|------|
 | 模型管理 | `model-manager.ts` | 加载、缓存嵌入模型，自动检测 HuggingFace 镜像（国内网络友好） |
-| 书签索引 | `bookmark-indexer.ts` | 遍历书签、生成向量、Orama 索引管理、增量更新、混合搜索 |
-| 搜索引擎 | `search-engine.ts` | 查询类型检测、自适应权重、混合搜索、后处理重排序 |
+| 书签索引 | `bookmark-indexer.ts` | 遍历书签、生成向量、Orama 索引管理、增量更新、混合搜索（QPS 算法 + 中文分词） |
+| 搜索引擎 | `search-engine.ts` | 查询类型检测（中英文混合支持）、自适应权重、混合搜索 |
 | 同步管理 | `sync-manager.ts` | 监听书签变化事件，增量更新索引 |
 | 文本预处理 | `text-preprocessor.ts` | URL 解析、嵌入文本构建、增强文本构建 |
 | 依赖注入 | `container.ts` | 管理核心模块的实例创建和依赖关系 |
@@ -261,7 +264,7 @@ Chrome MV3 的 Service Worker 在空闲时会被终止。索引构建（模型�
 
 - 索引版本号定义在 `entrypoints/background.ts` 中的 `INDEX_VERSION` 常量
 - 启动时检查 `chrome.storage.local` 中的 `indexVersion`，版本不匹配时自动全量重建索引
-- 当前版本：`2`（含文本预处理优化）
+- 当前版本：`1.1.0`（QPS 算法 + 中文分词）
 
 ---
 

@@ -5,7 +5,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   manifest: {
     name: 'Bookmark Helper',
-    version: '1.0.0',
+    version: '1.1.0',
     default_locale: 'zh_CN',
     description: '__MSG_extDescription__',
     permissions: ['bookmarks', 'storage', 'favicon', 'tabs', 'alarms'],

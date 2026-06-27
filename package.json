@@ -2,7 +2,7 @@
   "name": "Bookmark Helper",
   "description": "智能书签搜索 - 使用本地向量模型进行语义搜索",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "type": "module",
   "scripts": {

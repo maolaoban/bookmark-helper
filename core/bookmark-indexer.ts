@@ -341,7 +341,11 @@ export class BookmarkIndexer {
     const db = await this.ensureDB();
 
     try {
+      const existing = getByID(db, bookmarkId) as Record<string, unknown> | null;
+      if (!existing) return;
+
       await update(db, bookmarkId, {
+        ...existing,
         text: updates.text,
         embedding: updates.embedding,
         enrichedAt: updates.enrichedAt,

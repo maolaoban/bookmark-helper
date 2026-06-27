@@ -10,6 +10,7 @@ const DEFAULT_CONFIG: AppConfig = {
   indexThreshold: 0.6,
   searchLimit: 20,
   similarityThreshold: 0.3,
+  metadataExpiryDays: 7,
 };
 
 export function useConfig() {

@@ -38,6 +38,18 @@ function extractPageMetadata(): PageMetadata {
     bodyText = article.textContent.replace(/\s+/g, ' ').trim().slice(0, 200);
   }
 
+  let headerText = '';
+  const header = document.querySelector('header') || document.querySelector('nav');
+  if (header?.textContent) {
+    headerText = header.textContent.replace(/\s+/g, ' ').trim().slice(0, 200);
+  }
+
+  let footerText = '';
+  const footer = document.querySelector('footer');
+  if (footer?.textContent) {
+    footerText = footer.textContent.replace(/\s+/g, ' ').trim().slice(0, 200);
+  }
+
   const description = metaDescription || ogDescription || bodyText.slice(0, 100);
 
   return {
@@ -48,5 +60,7 @@ function extractPageMetadata(): PageMetadata {
     ogDescription: ogDescription || undefined,
     metaDescription: metaDescription || undefined,
     bodyText: bodyText || undefined,
+    headerText: headerText || undefined,
+    footerText: footerText || undefined,
   };
 }

@@ -79,6 +79,8 @@ export interface PageMetadata {
   ogDescription?: string;
   metaDescription?: string;
   bodyText?: string;
+  headerText?: string;
+  footerText?: string;
 }
 
 // 配置类型
@@ -90,6 +92,7 @@ export interface AppConfig {
   indexThreshold?: number;
   searchLimit?: number;
   similarityThreshold?: number;
+  metadataExpiryDays?: number;
 }
 
 // === Message Protocol Types ===

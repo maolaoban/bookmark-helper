@@ -5,7 +5,7 @@
 
 import type { BookmarkIndexer } from './bookmark-indexer';
 import type { SearchEngine } from './search-engine';
-import type { PageMetadata } from '../types';
+import type { PageMetadata, AppConfig } from '../types';
 import { buildEnrichedText } from './text-preprocessor';
 import type { ModelManager } from './model-manager';
 import { startKeepalive, stopKeepalive } from './keepalive';
@@ -70,21 +70,26 @@ async function handleMetadataExtracted(
   const bookmarks = await chrome.bookmarks.search({ url: meta.url });
   if (bookmarks.length === 0) return;
 
+  const { config } = await chrome.storage.local.get('config');
+  const expiryDays = (config as AppConfig | undefined)?.metadataExpiryDays ?? 7;
+  const expiryMs = expiryDays * 24 * 60 * 60 * 1000;
+
   for (const bm of bookmarks) {
     if (!bm.id) continue;
 
     const doc = await bookmarkIndexer.getDocument(bm.id);
     if (!doc) continue;
 
-    if (doc.enrichCount && doc.enrichCount > 0) continue;
+    if (doc.enrichedAt && (Date.now() - doc.enrichedAt) < expiryMs) continue;
 
     const enrichedText = buildEnrichedText(
       bm.title || '',
       meta.url,
       meta.description || '',
       meta.bodyText || '',
+      meta.headerText || '',
+      meta.footerText || '',
     );
-
     if (enrichedText === doc.text) continue;
 
     const embedding = await modelManager.generateEmbedding(enrichedText);
@@ -93,7 +98,7 @@ async function handleMetadataExtracted(
       text: enrichedText,
       embedding,
       enrichedAt: Date.now(),
-      enrichCount: 1,
+      enrichCount: (doc.enrichCount || 0) + 1,
     });
 
     console.log('[Background] 已增强书签:', bm.title);

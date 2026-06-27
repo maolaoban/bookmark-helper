@@ -37,5 +37,25 @@ describe('TextPreprocessor', () => {
       const result = buildEnrichedText('Title', 'https://example.com', '', '');
       expect(result).toBe('title example.com');
     });
+
+    it('should include header and footer text', () => {
+      const result = buildEnrichedText('Title', 'https://example.com', 'A description', 'Some body', 'Nav menu', 'Copyright 2024');
+      expect(result).toContain('Nav menu');
+      expect(result).toContain('A description');
+      expect(result).toContain('Some body');
+      expect(result).toContain('Copyright 2024');
+    });
+
+    it('should handle optional header and footer', () => {
+      const result = buildEnrichedText('Title', 'https://example.com', 'Desc', 'Body');
+      expect(result).toBe('title example.com Desc Body');
+    });
+
+    it('should truncate with header and footer within 512 chars', () => {
+      const longHeader = 'H'.repeat(300);
+      const longFooter = 'F'.repeat(300);
+      const result = buildEnrichedText('Title', 'https://example.com', '', '', longHeader, longFooter);
+      expect(result.length).toBeLessThanOrEqual(512);
+    });
   });
 });

@@ -49,10 +49,14 @@ export function buildEnrichedText(
   url: string,
   description: string,
   bodyText: string,
+  headerText?: string,
+  footerText?: string,
 ): string {
   const base = buildEmbeddingText(title, url);
   const parts = [base];
+  if (headerText) parts.push(headerText);
   if (description) parts.push(description);
   if (bodyText) parts.push(bodyText);
+  if (footerText) parts.push(footerText);
   return parts.join(' ').slice(0, 512);
 }

@@ -42,6 +42,17 @@ export function buildEmbeddingText(title: string, url: string): string {
 }
 
 /**
+ * 智能截断：在单词边界截断
+ */
+function truncateIntelligently(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+
+  const truncated = text.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > maxLength * 0.8 ? truncated.slice(0, lastSpace) : truncated;
+}
+
+/**
  * 构建增强文本（包含页面元数据），用于 enrichDocument
  */
 export function buildEnrichedText(
@@ -51,12 +62,17 @@ export function buildEnrichedText(
   bodyText: string,
   headerText?: string,
   footerText?: string,
+  keywords?: string,
 ): string {
   const base = buildEmbeddingText(title, url);
-  const parts = [base];
-  if (headerText) parts.push(headerText);
+  const parts: string[] = [];
+
+  if (keywords) parts.push(keywords);
   if (description) parts.push(description);
-  if (bodyText) parts.push(bodyText);
-  if (footerText) parts.push(footerText);
-  return parts.join(' ').slice(0, 512);
+  if (headerText) parts.push(headerText.slice(0, 150));
+  if (bodyText) parts.push(bodyText.slice(0, 200));
+  if (footerText) parts.push(footerText.slice(0, 100));
+
+  const enriched = [base, ...parts].join(' ');
+  return truncateIntelligently(enriched, 512);
 }

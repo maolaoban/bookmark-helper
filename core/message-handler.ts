@@ -67,12 +67,12 @@ async function handleMetadataExtracted(
   const { bookmarkIndexer, modelManager } = deps;
   if (!bookmarkIndexer.isReady()) return;
 
-  const bookmarks = await chrome.bookmarks.search({ url: meta.url });
-  if (bookmarks.length === 0) return;
-
   const { config } = await chrome.storage.local.get('config');
   const expiryDays = (config as AppConfig | undefined)?.metadataExpiryDays ?? 7;
   const expiryMs = expiryDays * 24 * 60 * 60 * 1000;
+
+  const bookmarks = await chrome.bookmarks.search({ url: meta.url });
+  if (bookmarks.length === 0) return;
 
   for (const bm of bookmarks) {
     if (!bm.id) continue;
@@ -89,20 +89,24 @@ async function handleMetadataExtracted(
       meta.bodyText || '',
       meta.headerText || '',
       meta.footerText || '',
+      meta.keywords,
     );
     if (enrichedText === doc.text) continue;
 
-    const embedding = await modelManager.generateEmbedding(enrichedText);
+    try {
+      const embedding = await modelManager.generateEmbedding(enrichedText);
 
-    await bookmarkIndexer.enrichDocument(bm.id, {
-      text: enrichedText,
-      embedding,
-      enrichedAt: Date.now(),
-      enrichCount: (doc.enrichCount || 0) + 1,
-    });
+      await bookmarkIndexer.enrichDocument(bm.id, {
+        text: enrichedText,
+        embedding,
+        enrichedAt: Date.now(),
+        enrichCount: (doc.enrichCount || 0) + 1,
+      });
 
-    console.log('[Background] 已增强书签:', bm.title);
-    console.log('[Background] 增强内容:', enrichedText);
+      console.log('[Background] 已增强书签:', bm.title);
+    } catch (error) {
+      console.error('[Background] 增强失败:', bm.title, error);
+    }
   }
 }
 

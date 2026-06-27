@@ -19,6 +19,15 @@ export default defineContentScript({
   },
 });
 
+function cleanText(text: string): string {
+  return text
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function extractPageMetadata(): PageMetadata {
   const getMeta = (name: string) =>
     document.querySelector(`meta[name="${name}"]`)?.getAttribute('content') || '';
@@ -28,26 +37,33 @@ function extractPageMetadata(): PageMetadata {
 
   const pageTitle = document.title || '';
   const metaDescription = getMeta('description');
+  const keywords = getMeta('keywords');
   const ogTitle = getOg('title');
   const ogDescription = getOg('description');
 
   let bodyText = '';
-  const article =
-    document.querySelector('article') || document.querySelector('main') || document.body;
-  if (article?.textContent) {
-    bodyText = article.textContent.replace(/\s+/g, ' ').trim().slice(0, 200);
+  const contentSelectors = ['article', 'main', '[role="main"]', '.content', '#content'];
+  for (const selector of contentSelectors) {
+    const el = document.querySelector(selector);
+    if (el?.textContent) {
+      bodyText = cleanText(el.textContent);
+      break;
+    }
+  }
+  if (!bodyText && document.body) {
+    bodyText = cleanText(document.body.textContent || '');
   }
 
   let headerText = '';
   const header = document.querySelector('header') || document.querySelector('nav');
   if (header?.textContent) {
-    headerText = header.textContent.replace(/\s+/g, ' ').trim().slice(0, 200);
+    headerText = cleanText(header.textContent);
   }
 
   let footerText = '';
   const footer = document.querySelector('footer');
   if (footer?.textContent) {
-    footerText = footer.textContent.replace(/\s+/g, ' ').trim().slice(0, 200);
+    footerText = cleanText(footer.textContent);
   }
 
   const description = metaDescription || ogDescription || bodyText.slice(0, 100);
@@ -59,8 +75,9 @@ function extractPageMetadata(): PageMetadata {
     ogTitle: ogTitle || undefined,
     ogDescription: ogDescription || undefined,
     metaDescription: metaDescription || undefined,
-    bodyText: bodyText || undefined,
-    headerText: headerText || undefined,
-    footerText: footerText || undefined,
+    bodyText: bodyText.slice(0, 300) || undefined,
+    headerText: headerText.slice(0, 200) || undefined,
+    footerText: footerText.slice(0, 200) || undefined,
+    keywords: keywords || undefined,
   };
 }

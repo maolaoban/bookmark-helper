@@ -81,6 +81,7 @@ export interface PageMetadata {
   bodyText?: string;
   headerText?: string;
   footerText?: string;
+  keywords?: string;
 }
 
 // 配置类型

@@ -83,8 +83,6 @@ async function handleMetadataExtracted(
     if (doc.enrichedAt && (Date.now() - doc.enrichedAt) < expiryMs) continue;
 
     const enrichedText = buildEnrichedText(
-      bm.title || '',
-      meta.url,
       meta.description || '',
       meta.bodyText || '',
       meta.headerText || '',
@@ -103,7 +101,7 @@ async function handleMetadataExtracted(
         enrichCount: (doc.enrichCount || 0) + 1,
       });
 
-      console.log('[Background] 已增强书签:', bm.title);
+      console.log('[Background] 已增强书签:', enrichedText);
     } catch (error) {
       console.error('[Background] 增强失败:', bm.title, error);
     }

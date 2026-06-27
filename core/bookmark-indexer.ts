@@ -18,6 +18,8 @@ import {
   MODE_VECTOR_SEARCH,
   type AnyOrama,
 } from '@orama/orama';
+import { createTokenizer } from '@orama/tokenizers/mandarin';
+import { pluginQPS } from '@orama/plugin-qps';
 import { openDB, type IDBPDatabase } from 'idb';
 import { ModelManager, type ModelProgress } from './model-manager';
 import { buildEmbeddingText } from './text-preprocessor';
@@ -62,7 +64,7 @@ export class BookmarkIndexer {
   private indexingPhase: 'loading_model' | 'indexing' | null = null;
   private dbPromise: Promise<IDBPDatabase> | null = null;
 
-  constructor(private modelManager: ModelManager) {}
+  constructor(private modelManager: ModelManager) { }
 
   private async saveIndexingState(): Promise<void> {
     await chrome.storage.session.set({
@@ -85,7 +87,13 @@ export class BookmarkIndexer {
     try {
       const raw = await this.loadFromIDB();
       if (raw) {
-        this.db = create({ schema: BOOKMARK_SCHEMA });
+        this.db = create({
+          schema: BOOKMARK_SCHEMA,
+          components: {
+            tokenizer: createTokenizer()
+          },
+          plugins: [pluginQPS()]
+        });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         load(this.db, raw as any);
         this.isInitialized = true;
@@ -190,7 +198,13 @@ export class BookmarkIndexer {
       await this.saveIndexingState();
       onProgress?.(0, total);
 
-      this.db = create({ schema: BOOKMARK_SCHEMA });
+      this.db = create({
+        schema: BOOKMARK_SCHEMA,
+        components: {
+          tokenizer: createTokenizer()
+        },
+        plugins: [pluginQPS()]
+      });
 
       const BATCH_SIZE = 10;
       const docs: Array<Record<string, unknown>> = [];
@@ -401,8 +415,8 @@ export class BookmarkIndexer {
       properties: ['title', 'url', 'text'],
       boost: {
         title: 2.0,
-        url: 0.5,
-        text: 1.0,
+        url: 1.0,
+        text: 3.0,
       },
       hybridWeights: {
         text: options.textWeight ?? 0.6,
@@ -443,11 +457,11 @@ export class BookmarkIndexer {
     }
 
     // 检查 session storage 中是否有未完成的索引（SW 重启后恢复）
-    const session = await chrome.storage.session.get('indexingState');
+    const session = await chrome.storage.session.get('indexingState') as { indexingState?: { isIndexing: boolean; phase?: string; total: number; current: number } };
     if (session.indexingState?.isIndexing) {
       return {
         isIndexing: true,
-        phase: session.indexingState.phase,
+        phase: session.indexingState.phase as 'loading_model' | 'indexing' | null,
         totalBookmarks: session.indexingState.total,
         indexedBookmarks: session.indexingState.current,
         lastIndexTime: null,

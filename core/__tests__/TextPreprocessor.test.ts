@@ -27,19 +27,18 @@ describe('TextPreprocessor', () => {
 
   describe('buildEnrichedText', () => {
     it('should include description and body text', () => {
-      const result = buildEnrichedText('Title', 'https://example.com', 'A description', 'Some body text');
-      expect(result).toContain('title');
+      const result = buildEnrichedText('A description', 'Some body text');
       expect(result).toContain('A description');
       expect(result).toContain('Some body text');
     });
 
     it('should handle empty description and body', () => {
-      const result = buildEnrichedText('Title', 'https://example.com', '', '');
-      expect(result).toBe('title example.com');
+      const result = buildEnrichedText('', '');
+      expect(result).toBe('');
     });
 
     it('should include header and footer text', () => {
-      const result = buildEnrichedText('Title', 'https://example.com', 'A description', 'Some body', 'Nav menu', 'Copyright 2024');
+      const result = buildEnrichedText('A description', 'Some body', 'Nav menu', 'Copyright 2024');
       expect(result).toContain('Nav menu');
       expect(result).toContain('A description');
       expect(result).toContain('Some body');
@@ -47,14 +46,14 @@ describe('TextPreprocessor', () => {
     });
 
     it('should handle optional header and footer', () => {
-      const result = buildEnrichedText('Title', 'https://example.com', 'Desc', 'Body');
-      expect(result).toBe('title example.com Desc Body');
+      const result = buildEnrichedText('Desc', 'Body');
+      expect(result).toBe('Desc Body');
     });
 
     it('should truncate with header and footer within 512 chars', () => {
       const longHeader = 'H'.repeat(300);
       const longFooter = 'F'.repeat(300);
-      const result = buildEnrichedText('Title', 'https://example.com', '', '', longHeader, longFooter);
+      const result = buildEnrichedText('', '', longHeader, longFooter);
       expect(result.length).toBeLessThanOrEqual(512);
     });
   });

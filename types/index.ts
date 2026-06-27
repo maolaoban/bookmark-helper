@@ -75,9 +75,6 @@ export interface PageMetadata {
   url: string;
   title: string;
   description: string;
-  ogTitle?: string;
-  ogDescription?: string;
-  metaDescription?: string;
   bodyText?: string;
   headerText?: string;
   footerText?: string;

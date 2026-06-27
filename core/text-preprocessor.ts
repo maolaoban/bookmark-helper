@@ -56,15 +56,12 @@ function truncateIntelligently(text: string, maxLength: number): string {
  * 构建增强文本（包含页面元数据），用于 enrichDocument
  */
 export function buildEnrichedText(
-  title: string,
-  url: string,
   description: string,
   bodyText: string,
   headerText?: string,
   footerText?: string,
   keywords?: string,
 ): string {
-  const base = buildEmbeddingText(title, url);
   const parts: string[] = [];
 
   if (keywords) parts.push(keywords);
@@ -73,6 +70,6 @@ export function buildEnrichedText(
   if (bodyText) parts.push(bodyText.slice(0, 200));
   if (footerText) parts.push(footerText.slice(0, 100));
 
-  const enriched = [base, ...parts].join(' ');
+  const enriched = parts.join(' ');
   return truncateIntelligently(enriched, 512);
 }

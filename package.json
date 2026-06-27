@@ -25,6 +25,8 @@
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
     "@orama/orama": "^3.1.18",
+    "@orama/plugin-qps": "^3.1.18",
+    "@orama/tokenizers": "^3.1.18",
     "i18next": "^26.3.1",
     "idb": "^8.0.3",
     "react": "^19.2.4",

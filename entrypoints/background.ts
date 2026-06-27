@@ -54,7 +54,7 @@ export default defineBackground(async () => {
   ).indexVersion as number | undefined;
 
   // 检查是否有未完成的索引（SW 重启恢复）
-  const session = await chrome.storage.session.get('indexingState');
+  const session = await chrome.storage.session.get('indexingState') as { indexingState?: { isIndexing: boolean } };
   const hasUnfinishedIndex = session.indexingState?.isIndexing === true;
 
   if (exists && storedVersion === INDEX_VERSION && !hasUnfinishedIndex) {
